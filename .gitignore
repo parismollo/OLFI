@@ -1,0 +1,6 @@
+linux-6.5.7/
+share/
+ext4_partition.img
+lkp-arch.img
+ouichefs_partition.img
+.vscode/
