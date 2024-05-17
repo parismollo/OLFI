@@ -230,13 +230,12 @@ void run_benchmark(const char * folder_path, size_t N) {
     }
 
     struct dirent *entry;
+    struct stat st;
     size_t i = 0;
     printf("Start read benchmark: \n");
-    printf("we opendir this: %s\n", folder_path);
     while((entry = readdir(dir)) != NULL && i < N) {
-        printf("xxx");
-        if(entry->d_type == DT_REG) {
-            snprintf(file_path, sizeof(file_path), "%s%s", folder_path, entry->d_name);
+        snprintf(file_path, sizeof(file_path), "%s%s", folder_path, entry->d_name);
+        if (stat(file_path, &st) == 0 && S_ISREG(st.st_mode)) {
             printf("read_performance for file: %s\n", file_path);
             read_performance(file_path, &read_benchmarks[i]);
             total_read_time += read_benchmarks[i].time;
