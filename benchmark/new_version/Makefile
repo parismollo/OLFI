@@ -14,4 +14,5 @@ $(TARGET): $(SOURCES)
 # Clean up
 clean:
 	rm -f test_files/*
+	rm -f /mnt/ouichefs/test_files/*
 	rm -f $(TARGET)
