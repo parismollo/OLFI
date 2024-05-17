@@ -222,10 +222,91 @@ static int ouichefs_open(struct inode *inode, struct file *file) {
 	return 0;
 }
 
+ssize_t myouichefs_read(struct file *filp, char __user *buf, size_t len, loff_t *ppos) {
+    struct inode *inode = filp->f_inode;
+    struct super_block *sb = inode->i_sb;
+    // struct ouichefs_sb_info *sbi = OUICHEFS_SB(sb);
+    struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
+    size_t count = 0;
+    loff_t file_size = inode->i_size;
+
+    printk(KERN_INFO "myouichefs_read: start - offset %lld, length %zu, file size %lld\n", *ppos, len, file_size);
+
+    if (*ppos >= file_size) {
+        printk(KERN_INFO "myouichefs_read: offset beyond file size\n");
+        return 0;
+    }
+
+    len = min(len, (size_t)(file_size - *ppos));
+    printk(KERN_INFO "myouichefs_read: adjusted length to read %zu\n", len);
+
+    unsigned long offset = *ppos % OUICHEFS_BLOCK_SIZE;
+    unsigned long block_index = *ppos / OUICHEFS_BLOCK_SIZE;
+
+    struct buffer_head *bh_index = sb_bread(sb, ci->index_block);
+    if (!bh_index) {
+        printk(KERN_ERR "myouichefs_read: failed to read index block at index %u\n", ci->index_block);
+        return -EIO;
+    }
+
+    struct ouichefs_file_index_block *index = (struct ouichefs_file_index_block *)bh_index->b_data;
+
+    while (count < len) {
+        printk(KERN_INFO "myouichefs_read: loop - current block index %lu, read count %zu\n", block_index, count);
+
+        if (block_index >= (OUICHEFS_BLOCK_SIZE >> 2)) {
+            printk(KERN_WARNING "myouichefs_read: block index exceeds maximum blocks per file\n");
+            brelse(bh_index);
+            return count ? count : -EFBIG;
+        }
+
+        unsigned long block_no = index->blocks[block_index];
+        printk(KERN_INFO "myouichefs_read: processing block %lu\n", block_no);
+
+        if (block_no == 0) {
+            printk(KERN_WARNING "myouichefs_read: block number is 0 - block not allocated\n");
+            brelse(bh_index);
+            return count;
+        }
+
+        struct buffer_head *bh_data = sb_bread(sb, block_no);
+        if (!bh_data) {
+            printk(KERN_ERR "myouichefs_read: failed to read block %lu\n", block_no);
+            brelse(bh_index);
+            return -EIO;
+        }
+
+        unsigned long n = min(len - count, OUICHEFS_BLOCK_SIZE - offset);
+        printk(KERN_INFO "myouichefs_read: copying %lu bytes to user\n", n);
+
+        if (copy_to_user(buf + count, bh_data->b_data + offset, n)) {
+            printk(KERN_ERR "myouichefs_read: copy_to_user failed\n");
+            brelse(bh_data);
+            brelse(bh_index);
+            return -EFAULT;
+        }
+
+		printk(KERN_INFO "Buffer content: %s\n", bh_data->b_data + offset);
+		printk(KERN_INFO "Buffer content in hex: %ph\n",bh_data->b_data + offset);
+
+        brelse(bh_data);
+        count += n;
+        *ppos += n;
+        block_index++;
+        offset = 0;  // Reset offset for the next full block read
+    }
+
+    brelse(bh_index);
+    printk(KERN_INFO "myouichefs_read: read completed successfully, total bytes read: %zu\n", count);
+    return count;
+}
+
+
 const struct file_operations ouichefs_file_ops = {
 	.owner = THIS_MODULE,
 	.open = ouichefs_open,
 	.llseek = generic_file_llseek,
-	.read_iter = generic_file_read_iter,
+	// .read_iter = generic_file_read_iter,
+	.read = myouichefs_read,
 	.write_iter = generic_file_write_iter
 };
