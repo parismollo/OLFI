@@ -280,10 +280,10 @@ int run_write_read_check(const char * folder_path, const char * result_path, int
     size_t data_len;
     char path[256];
     DIR * dir = opendir(folder_path);
-        if (dir == NULL) {
-            perror("opendir failed during test data retrieval");
-            exit(EXIT_FAILURE);
-        }
+    if (dir == NULL) {
+        perror("opendir failed during test data retrieval");
+        exit(EXIT_FAILURE);
+    }
     struct dirent *entry;
     struct stat st;
     size_t i = 0;
