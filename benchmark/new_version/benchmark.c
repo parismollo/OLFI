@@ -1,13 +1,9 @@
 #include "benchmark.h"
 
 
-void create_random_file(const char * path, size_t file_size) {
-    FILE *file;
-    char * data;
-    size_t written_size = 0;
-    size_t random_pos;
+char * generate_random_data() {
     size_t chunk_size = DATA_CHUNK_SIZE;
-
+    char * data;
     data = (char *) malloc(chunk_size);
     if(data == NULL) {
         perror("malloc failed");
@@ -17,7 +13,16 @@ void create_random_file(const char * path, size_t file_size) {
     for(size_t i = 0; i < chunk_size; i++) {
         data[i] = 'A' + (i % 26); 
     }
+    return data;
+}
 
+void create_random_file(const char * path, size_t file_size) {
+    FILE *file;
+    char * data;
+    size_t written_size = 0;
+    size_t random_pos;
+    size_t chunk_size = DATA_CHUNK_SIZE;
+    data = generate_random_data();
     file = fopen(path, "wb");
     if(file == NULL) {
         perror("fopen failed");
@@ -266,4 +271,46 @@ void run_benchmark(const char * folder_path, size_t N) {
 
     free(read_benchmarks);
     free(write_benchmarks);
+}
+
+int run_write_read_check(const char * folder_path, const char * result_path, int N) {
+
+    FILE * file;
+    char* test_data;
+    size_t data_len;
+    char path[256];
+    DIR * dir = opendir(folder_path);
+        if (dir == NULL) {
+            perror("opendir failed during test data retrieval");
+            exit(EXIT_FAILURE);
+        }
+    struct dirent *entry;
+    struct stat st;
+    size_t i = 0;
+    printf("Start read benchmark: \n");
+    while((entry = readdir(dir)) != NULL && i < N) {
+        snprintf(path, sizeof(path), "%s%s", folder_path, entry->d_name);
+        if (stat(path, &st) == 0 && S_ISREG(st.st_mode)) {
+            printf("retrieving test data from : %s\n", path);
+
+            file = fopen(path, "rb");
+            if(file == NULL) {
+                perror("fopen failed");
+                exit(EXIT_FAILURE);
+            }
+
+            data_len = ftell(file);
+            if(fread(test_data, 1, data_len, file) != data_len) {
+                perror("test data fread failed");
+                fclose(file);
+                return -1;
+            }
+
+            fclose(file);
+
+            check_write_read(result_path, test_data);
+            i++;
+        }
+    }
+    closedir(dir);
 }
