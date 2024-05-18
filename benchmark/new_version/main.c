@@ -28,5 +28,8 @@ int main(int argc, char **argv) {
     printf("Running benchmark on /mnt/ouichefs/test_files directory...\n");
     run_benchmark("/mnt/ouichefs/test_files/", num_files);
 
+    printf("Checking read and write on /mnt/ouichefs/test_files directory...\n");
+    run_write_read_check("/mnt/ouichefs/test_files/", "/mnt/ouichefs/test_files/check_result", num_files);
+
     return 0;
 }
