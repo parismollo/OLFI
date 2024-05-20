@@ -222,156 +222,102 @@ static int ouichefs_open(struct inode *inode, struct file *file) {
 	return 0;
 }
 
-static ssize_t ouichefs_read(struct file *file, char __user *data, size_t len, loff_t *pos)
-{
-	printk(KERN_INFO "BEGIN CUSTOM READ!$$$$$\n");
+/*
+- function returns a ssize_t (signed size type) to indicate number of bytes read or an error
+- file is a pointer to a file (file being read)
+- data  is user space buffer
+- len number of bytes to read
+- pos pointer to the file offset
 
-	if (*pos >= file->f_inode->i_size)
+(1) Check if current file position is greater then or equal to the file size (i_size). We return 0 because there are nothing left to read.
+(2) get super block (metadata about filesystem); iblock is the index of current block containing the file position. To get the index of the block we do current offset
+divided by the block size of ouichefs. We then retrieve the inode (custom inode) for ouichefs.
+(3) Check if block index is within a valid range. 
+(4) sb bread reads the block containing the file index block from disk. The index block maps file offsets to actual data blocks. Converts raw data from disk into structured format ouichefs_file_index_block
+(5) retrieves the block number corresponding to the current block index, this number will point to the actual data block on disk
+(6) read the actual data block from disk
+(7) intially the buffer will point to the beggining of the data block, but we need to adjust for the right offset, that will find the correct offset within that block
+(8) it reads the entire buffer or len so that it does not attempt to read beyonf the avaialable data in the block
+(9) transfer data from kernel space to the user space buffer, and calcualates how many bytes were copied from what was expected
+(10) update offset based on how much was copied and ensure file pointer reflects new position
+(11) release index block and data block
+*/
+static ssize_t ouichefs_read(struct file *file, char __user *data, size_t len, loff_t *offset)
+{
+
+
+	printk(KERN_INFO "ouiches_read(): file_name = %s, len = %zu, current_offset = %lld\n", file_dentry(file)->d_name.name, len, (long long)*offset);
+	printk(KERN_INFO "ouiches_read(): started\n");
+
+	// (1)
+	if (*offset >= file->f_inode->i_size) {
+		printk(KERN_INFO "ouiches_read(): offset goes beyond file size\n");
 		return 0;
+	}
 
-	unsigned long to_be_copied = 0;
-	unsigned long copied_to_user = 0;
+	unsigned long bytes_to_copy = 0;
+	unsigned long bytes_copied = 0;
 
-	struct super_block *sb = file->f_inode->i_sb;
-	sector_t iblock = *pos / OUICHEFS_BLOCK_SIZE;
-	struct ouichefs_file_index_block *index;
-	struct buffer_head *bh_index;
-	struct ouichefs_inode_info *ci = OUICHEFS_INODE(file->f_inode);
+	// (2) 
+	struct super_block *super_blk = file->f_inode->i_sb;
+	sector_t block_index = *offset / OUICHEFS_BLOCK_SIZE;
+	printk(KERN_INFO "ouiches_read(): block_index = %llu\n", (unsigned long long)block_index);
+	struct ouichefs_file_index_block *file_index;
+	struct buffer_head *buffer_head_index;
+	struct ouichefs_inode_info *inode_info = OUICHEFS_INODE(file->f_inode);
 
-	/* If block number exceeds filesize, fail */
-	if (iblock >= OUICHEFS_BLOCK_SIZE >> 2)
+	// (3)
+	if (block_index >= OUICHEFS_BLOCK_SIZE >> 2)
 		return -EFBIG;
 
-	/* Read index block from disk */
-	bh_index = sb_bread(sb, ci->index_block);
-	if (!bh_index)
+	// (4)
+	buffer_head_index = sb_bread(super_blk, inode_info->index_block);
+	if (!buffer_head_index)
 		return -EIO;
-	index = (struct ouichefs_file_index_block *)bh_index->b_data;
+	file_index = (struct ouichefs_file_index_block *)buffer_head_index->b_data;
 
-	/* Get the block number for the current iblock */
-	int bno = index->blocks[iblock];
+	// (5)
+	int block_number = file_index->blocks[block_index];
+	printk(KERN_INFO "ouiches_read(): block_number = %d\n", block_number);
 
-	if (bno == 0) {
-		brelse(bh_index);
-		return -EIO;
-	}
-
-	struct buffer_head *bh = sb_bread(sb, bno);
-
-	if (!bh) {
-		brelse(bh_index);
+	if (block_number == 0) {
+		brelse(buffer_head_index);
 		return -EIO;
 	}
 
-	char *buffer = bh->b_data;
+	// (6)
+	struct buffer_head *buffer_head_data = sb_bread(super_blk, block_number);
 
-	// get data from the buffer from the current position
-	buffer += *pos % OUICHEFS_BLOCK_SIZE;
+	if (!buffer_head_data) {
+		brelse(buffer_head_index);
+		return -EIO;
+	}
 
-	if (bh->b_size < len)
-		to_be_copied = bh->b_size;
+	// (7)
+	char *data_buffer = buffer_head_data->b_data;
+	data_buffer += *offset % OUICHEFS_BLOCK_SIZE;
+
+	// (8)
+	if (buffer_head_data->b_size < len)
+		bytes_to_copy = buffer_head_data->b_size;
 	else
-		to_be_copied = len;
+		bytes_to_copy = len;
+	printk(KERN_INFO "ouiches_read(): bytes_to_copy = %lu\n", bytes_to_copy);
 
-	copied_to_user = to_be_copied - copy_to_user(data, buffer, to_be_copied);
+	// (9)
+	bytes_copied = bytes_to_copy - copy_to_user(data, data_buffer, bytes_to_copy);
+	printk(KERN_INFO"ouiches_read(): bytes_copied = %lu\n", bytes_copied);
 
-	*pos += copied_to_user;
-	file->f_pos = *pos;
+	// (10)
+	*offset += bytes_copied;
+	file->f_pos = *offset;
+	printk(KERN_INFO "ouiches_read(): new offset = %lld\n", (long long)*offset);
 
-	brelse(bh);
-	brelse(bh_index);
-
-	printk(KERN_INFO "END CUSTOM READ!$$$$$\n");
-	return copied_to_user;
-}
-
-static ssize_t ouichefs_write(struct file *file, const char __user *data, size_t len, loff_t *pos)
-{
-	printk(KERN_INFO "BEGIN CUSTOM WRITE!$$$$$\n");
-	printk(KERN_INFO "write: au voir\n");
-	printk(KERN_INFO "pos: %lld\n", *pos);
-	printk(KERN_INFO "len: %zu\n", len);
-	printk("file->f_pos: %lld\n", file->f_pos);
-
-	struct inode *inode = file->f_inode;
-	struct super_block *sb = inode->i_sb;
-	struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
-	struct ouichefs_file_index_block *index;
-	struct buffer_head *bh_index, *bh;
-	char *buffer;
-	size_t to_be_written, written = 0;
-	sector_t iblock;
-	int bno;
-
-	if (file->f_flags & O_APPEND) {
-		*pos = inode->i_size;
-	}
-
-	if (*pos >= OUICHEFS_MAX_FILESIZE)
-		return -EFBIG;
-
-	while (len > 0) {
-		// Calculer le bloc logique où écrire
-		iblock = *pos / OUICHEFS_BLOCK_SIZE;
-
-		// Lire l'index du fichier
-		bh_index = sb_bread(sb, ci->index_block);
-		if (!bh_index)
-			return -EIO;
-		index = (struct ouichefs_file_index_block *)bh_index->b_data;
-
-		// Vérifier si le bloc est déjà alloué
-		if (index->blocks[iblock] == 0) {
-			// Allouer un nouveau bloc
-			bno = get_free_block(OUICHEFS_SB(sb));
-			if (!bno) {
-				brelse(bh_index);
-				return -ENOSPC;
-			}
-			index->blocks[iblock] = bno;
-			mark_buffer_dirty(bh_index);
-			sync_dirty_buffer(bh_index);
-		} else {
-			bno = index->blocks[iblock];
-		}
-
-		// Lire ou initialiser le bloc de données
-		bh = sb_bread(sb, bno);
-		if (!bh) {
-			brelse(bh_index);
-			return -EIO;
-		}
-		buffer = bh->b_data;
-
-		// Calculer la quantité de données à écrire dans ce bloc
-		to_be_written = min(len, (size_t)(OUICHEFS_BLOCK_SIZE - (*pos % OUICHEFS_BLOCK_SIZE)));
-
-		// Copier les données de l'utilisateur dans le bloc de données
-		if (copy_from_user(buffer + (*pos % OUICHEFS_BLOCK_SIZE), data, to_be_written)) {
-			brelse(bh);
-			brelse(bh_index);
-			return -EFAULT;
-		}
-
-		mark_buffer_dirty(bh);
-		sync_dirty_buffer(bh);
-		brelse(bh);
-		brelse(bh_index);
-
-		*pos += to_be_written;
-		data += to_be_written;
-		len -= to_be_written;
-		written += to_be_written;
-
-		// Mettre à jour la taille du fichier si nécessaire
-		if (*pos > inode->i_size) {
-			inode->i_size = *pos;
-			mark_inode_dirty(inode);
-		}
-	}
-	printk(KERN_INFO "END CUSTOM WRITE!$$$$$\n");
-
-	return written;
+	// (11)
+	brelse(buffer_head_data);
+	brelse(buffer_head_index);
+	printk(KERN_INFO "ouiches_read(): finished\n");
+	return bytes_copied;
 }
 
 
@@ -463,6 +409,96 @@ static ssize_t ouichefs_write(struct file *file, const char __user *data, size_t
 
 	return written;
 }
+
+
+// static ssize_t ouichefs_write(struct file *file, const char __user *data, size_t len, loff_t *pos)
+// {
+// 	printk(KERN_INFO "BEGIN CUSTOM WRITE!$$$$$\n");
+// 	printk(KERN_INFO "write: au voir\n");
+// 	printk(KERN_INFO "pos: %lld\n", *pos);
+// 	printk(KERN_INFO "len: %zu\n", len);
+// 	printk("file->f_pos: %lld\n", file->f_pos);
+
+// 	struct inode *inode = file->f_inode;
+// 	struct super_block *sb = inode->i_sb;
+// 	struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
+// 	struct ouichefs_file_index_block *index;
+// 	struct buffer_head *bh_index, *bh;
+// 	char *buffer;
+// 	size_t to_be_written, written = 0;
+// 	sector_t iblock;
+// 	int bno;
+
+// 	if (file->f_flags & O_APPEND) {
+// 		*pos = inode->i_size;
+// 	}
+
+// 	if (*pos >= OUICHEFS_MAX_FILESIZE)
+// 		return -EFBIG;
+
+// 	while (len > 0) {
+// 		// Calculer le bloc logique où écrire
+// 		iblock = *pos / OUICHEFS_BLOCK_SIZE;
+
+// 		// Lire l'index du fichier
+// 		bh_index = sb_bread(sb, ci->index_block);
+// 		if (!bh_index)
+// 			return -EIO;
+// 		index = (struct ouichefs_file_index_block *)bh_index->b_data;
+
+// 		// Vérifier si le bloc est déjà alloué
+// 		if (index->blocks[iblock] == 0) {
+// 			// Allouer un nouveau bloc
+// 			bno = get_free_block(OUICHEFS_SB(sb));
+// 			if (!bno) {
+// 				brelse(bh_index);
+// 				return -ENOSPC;
+// 			}
+// 			index->blocks[iblock] = bno;
+// 			mark_buffer_dirty(bh_index);
+// 			sync_dirty_buffer(bh_index);
+// 		} else {
+// 			bno = index->blocks[iblock];
+// 		}
+
+// 		// Lire ou initialiser le bloc de données
+// 		bh = sb_bread(sb, bno);
+// 		if (!bh) {
+// 			brelse(bh_index);
+// 			return -EIO;
+// 		}
+// 		buffer = bh->b_data;
+
+// 		// Calculer la quantité de données à écrire dans ce bloc
+// 		to_be_written = min(len, (size_t)(OUICHEFS_BLOCK_SIZE - (*pos % OUICHEFS_BLOCK_SIZE)));
+
+// 		// Copier les données de l'utilisateur dans le bloc de données
+// 		if (copy_from_user(buffer + (*pos % OUICHEFS_BLOCK_SIZE), data, to_be_written)) {
+// 			brelse(bh);
+// 			brelse(bh_index);
+// 			return -EFAULT;
+// 		}
+
+// 		mark_buffer_dirty(bh);
+// 		sync_dirty_buffer(bh);
+// 		brelse(bh);
+// 		brelse(bh_index);
+
+// 		*pos += to_be_written;
+// 		data += to_be_written;
+// 		len -= to_be_written;
+// 		written += to_be_written;
+
+// 		// Mettre à jour la taille du fichier si nécessaire
+// 		if (*pos > inode->i_size) {
+// 			inode->i_size = *pos;
+// 			mark_inode_dirty(inode);
+// 		}
+// 	}
+// 	printk(KERN_INFO "END CUSTOM WRITE!$$$$$\n");
+
+// 	return written;
+// }
 
 
 const struct file_operations ouichefs_file_ops = {
