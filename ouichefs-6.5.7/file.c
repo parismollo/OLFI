@@ -320,6 +320,106 @@ static ssize_t ouichefs_read(struct file *file, char __user *data, size_t len, l
 	return bytes_copied;
 }
 
+static ssize_t ouichefs_write(struct file *file, const char __user *data, size_t len, loff_t *pos) {
+    struct inode *inode = file->f_inode;
+    struct super_block *sb = inode->i_sb;
+    struct ouichefs_inode_info *inode_info = OUICHEFS_INODE(inode);
+    struct ouichefs_file_index_block *file_index;
+    struct buffer_head *index_bh, *data_bh;
+    char *data_buffer;
+    size_t bytes_to_write, bytes_written = 0;
+    sector_t logical_block;
+    int block_number;
+
+    printk(KERN_INFO "ouichefs_write: Starting write operation\n");
+    printk(KERN_INFO "ouichefs_write: Position: %lld, Length: %zu\n", *pos, len);
+
+    if (file->f_flags & O_APPEND) {
+        *pos = inode->i_size;
+        printk(KERN_INFO "ouichefs_write: Append mode, new position: %lld\n", *pos);
+    }
+
+    if (*pos >= OUICHEFS_MAX_FILESIZE) {
+        printk(KERN_ERR "ouichefs_write: Position exceeds max file size\n");
+        return -EFBIG;
+    }
+
+    while (len > 0) {
+        // Calculate the logical block number to write to
+        logical_block = *pos / OUICHEFS_BLOCK_SIZE;
+        printk(KERN_INFO "ouichefs_write: Writing to logical block: %lu\n", (unsigned long)logical_block);
+
+        // Read the file's index block
+        index_bh = sb_bread(sb, inode_info->index_block);
+        if (!index_bh) {
+            printk(KERN_ERR "ouichefs_write: Failed to read index block\n");
+            return -EIO;
+        }
+        file_index = (struct ouichefs_file_index_block *)index_bh->b_data;
+
+        // Check if the block is already allocated
+        if (file_index->blocks[logical_block] == 0) {
+            // Allocate a new block
+            block_number = get_free_block(OUICHEFS_SB(sb));
+            if (!block_number) {
+                brelse(index_bh);
+                printk(KERN_ERR "ouichefs_write: No space left to allocate new block\n");
+                return -ENOSPC;
+            }
+            file_index->blocks[logical_block] = block_number;
+            mark_buffer_dirty(index_bh);
+            sync_dirty_buffer(index_bh);
+            printk(KERN_INFO "ouichefs_write: Allocated new block number: %d\n", block_number);
+        } else {
+            block_number = file_index->blocks[logical_block];
+            printk(KERN_INFO "ouichefs_write: Using existing block number: %d\n", block_number);
+        }
+
+        // Read or initialize the data block
+        data_bh = sb_bread(sb, block_number);
+        if (!data_bh) {
+            brelse(index_bh);
+            printk(KERN_ERR "ouichefs_write: Failed to read data block\n");
+            return -EIO;
+        }
+        data_buffer = data_bh->b_data;
+
+        // Calculate the amount of data to write in this block
+        bytes_to_write = min(len, (size_t)(OUICHEFS_BLOCK_SIZE - (*pos % OUICHEFS_BLOCK_SIZE)));
+        printk(KERN_INFO "ouichefs_write: Bytes to write in this iteration: %zu\n", bytes_to_write);
+
+        // Copy data from userspace to the data block
+        if (copy_from_user(data_buffer + (*pos % OUICHEFS_BLOCK_SIZE), data, bytes_to_write)) {
+            brelse(data_bh);
+            brelse(index_bh);
+            printk(KERN_ERR "ouichefs_write: Failed to copy data from user space\n");
+            return -EFAULT;
+        }
+
+        mark_buffer_dirty(data_bh);
+        sync_dirty_buffer(data_bh);
+        brelse(data_bh);
+        brelse(index_bh);
+
+        // Update pointers and counters
+        *pos += bytes_to_write;
+        data += bytes_to_write;
+        len -= bytes_to_write;
+        bytes_written += bytes_to_write;
+        printk(KERN_INFO "ouichefs_write: Updated position: %lld, Bytes written so far: %zu\n", *pos, bytes_written);
+
+        // Update the file size if necessary
+        if (*pos > inode->i_size) {
+            inode->i_size = *pos;
+            mark_inode_dirty(inode);
+            printk(KERN_INFO "ouichefs_write: Updated file size: %lld\n", inode->i_size);
+        }
+    }
+
+    printk(KERN_INFO "ouichefs_write: Write operation completed, total bytes written: %zu\n", bytes_written);
+    return bytes_written;
+}
+
 
 const struct file_operations ouichefs_file_ops = {
 	.owner = THIS_MODULE,
