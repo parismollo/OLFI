@@ -321,6 +321,7 @@ static ssize_t ouichefs_read(struct file *file, char __user *data, size_t len, l
 }
 
 
+<<<<<<< HEAD
 static ssize_t ouichefs_write(struct file *file, const char __user *data, size_t len, loff_t *pos)
 {
 	printk(KERN_INFO "BEGIN CUSTOM WRITE!$$$$$\n");
@@ -501,6 +502,8 @@ static ssize_t ouichefs_write(struct file *file, const char __user *data, size_t
 // }
 
 
+=======
+>>>>>>> 71633bc (Removing duplicated write function)
 const struct file_operations ouichefs_file_ops = {
 	.owner = THIS_MODULE,
 	.open = ouichefs_open,
