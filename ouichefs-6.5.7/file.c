@@ -323,6 +323,7 @@ static ssize_t ouichefs_read(struct file *file, char __user *data, size_t len, l
 static ssize_t ouichefs_write(struct file *file, const char __user *data, size_t len, loff_t *pos) {
     struct inode *inode = file->f_inode;
     struct super_block *sb = inode->i_sb;
+	struct ouichefs_sb_info *sbi = OUICHEFS_SB(sb);
     struct ouichefs_inode_info *inode_info = OUICHEFS_INODE(inode);
     struct ouichefs_file_index_block *file_index;
     struct buffer_head *index_bh, *data_bh;
@@ -334,7 +335,22 @@ static ssize_t ouichefs_write(struct file *file, const char __user *data, size_t
     printk(KERN_INFO "ouichefs_write: Starting write operation\n");
     printk(KERN_INFO "ouichefs_write: Position: %lld, Length: %zu\n", *pos, len);
 
-    if (file->f_flags & O_APPEND) {
+
+	// Add to fix file deletion issues
+	if (*pos + len > OUICHEFS_MAX_FILESIZE)
+    	return -ENOSPC;
+    uint32_t nr_allocs = max(*pos + (unsigned int) len, inode->i_size) / OUICHEFS_BLOCK_SIZE;
+    if (nr_allocs > inode->i_blocks - 1)
+	{
+		nr_allocs -= inode->i_blocks - 1;
+	}else{
+		nr_allocs = 0;
+	}
+
+	if (nr_allocs > sbi->nr_free_blocks)
+    	return -ENOSPC;
+
+	if (file->f_flags & O_APPEND) {
         *pos = inode->i_size;
         printk(KERN_INFO "ouichefs_write: Append mode, new position: %lld\n", *pos);
     }
