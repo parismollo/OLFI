@@ -437,6 +437,74 @@ static ssize_t ouichefs_write(struct file *file, const char __user *data, size_t
 }
 
 
+/*ioctl functions*/
+uint32_t create_block_entry(uint32_t block_number, uint32_t block_size) {
+    return (block_size << 20) | (block_number & BLOCK_NUMBER_MASK);
+}
+
+uint32_t get_block_number(uint32_t entry) {
+    return (entry & BLOCK_NUMBER_MASK);
+}
+
+uint32_t get_block_size(uint32_t entry) {
+    return (entry & BLOCK_SIZE_MASK) >> 20;
+}
+
+static long ouichefs_ioctl(struct file *file, unsigned int cmd, unsigned long arg) {
+    struct inode *inode = file_inode(file);
+    struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
+    struct ouichefs_file_index_block *file_index;
+    struct buffer_head *bh_index;
+    struct super_block *sb = inode->i_sb;
+
+
+	struct ouichefs_ioctl_info *info = kmalloc(sizeof(struct ouichefs_ioctl_info), GFP_KERNEL);
+    if (!info) {
+        return -ENOMEM;
+    }
+
+    memset(info, 0, sizeof(struct ouichefs_ioctl_info));
+
+    if (cmd != OUICHEFS_IOC_GET_INFO) {
+		kfree(info);
+        return -ENOTTY;
+    }
+
+    bh_index = sb_bread(sb, ci->index_block);
+    if (!bh_index) {
+		kfree(info);
+        return -EIO;
+    }
+    file_index = (struct ouichefs_file_index_block *)bh_index->b_data;
+
+    for (int i = 0; i < (OUICHEFS_BLOCK_SIZE >> 2); ++i) {
+        uint32_t entry = file_index->blocks[i];
+        if (entry == 0) {
+            continue;
+        }
+
+        uint32_t block_number = get_block_number(entry);
+        uint32_t size = get_block_size(entry);
+
+        info->blocks[info->used_blocks].block_number = block_number;
+        info->blocks[info->used_blocks].effective_size = size;
+        info->used_blocks++;
+
+        if (size < OUICHEFS_BLOCK_SIZE) {
+            info->partially_filled_blocks++;
+            info->internal_fragmentation += (OUICHEFS_BLOCK_SIZE - size);
+        }
+    }
+    brelse(bh_index);
+
+    if (copy_to_user((struct ouichefs_ioctl_info *)arg, info, sizeof(struct ouichefs_ioctl_info))) {
+		kfree(info);
+        return -EFAULT;
+    }
+	kfree(info);
+    return 0;
+}
+
 const struct file_operations ouichefs_file_ops = {
 	.owner = THIS_MODULE,
 	.open = ouichefs_open,
@@ -444,5 +512,6 @@ const struct file_operations ouichefs_file_ops = {
 	.read_iter = generic_file_read_iter,
 	.read = ouichefs_read,
 	.write = ouichefs_write,
-	.write_iter = generic_file_write_iter
+	.write_iter = generic_file_write_iter,
+	.unlocked_ioctl = ouichefs_ioctl,
 };

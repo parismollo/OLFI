@@ -69,11 +69,16 @@ struct ouichefs_inode_info {
 #define OUICHEFS_IOC_MAGIC 'o'
 #define OUICHEFS_IOC_GET_INFO _IOR(OUICHEFS_IOC_MAGIC, 1, struct ouichefs_ioctl_info)
 
+struct ouichefs_block_info {
+    uint32_t block_number;
+    uint32_t effective_size;
+};
+
 struct ouichefs_ioctl_info {
-    uint32_t used_blocks;
-    uint32_t partially_filled_blocks;
-    uint32_t internal_fragmentation;
- 	uint32_t blocks[OUICHEFS_BLOCK_SIZE >> 2];
+    uint32_t used_blocks;               
+    uint32_t partially_filled_blocks;   
+    uint32_t internal_fragmentation;    
+    struct ouichefs_block_info blocks[OUICHEFS_BLOCK_SIZE >> 2];  
 };
 
 struct ouichefs_sb_info {
@@ -117,18 +122,6 @@ extern const struct file_operations ouichefs_file_ops;
 extern const struct file_operations ouichefs_dir_ops;
 extern const struct address_space_operations ouichefs_aops;
 
-/*ioctl functions*/
-uint32_t create_block_entry(uint32_t block_number, uint32_t block_size) {
-    return (block_size << 20) | (block_number & BLOCK_NUMBER_MASK);
-}
-
-uint32_t get_block_number(uint32_t entry) {
-    return (entry & BLOCK_NUMBER_MASK);
-}
-
-uint32_t get_block_size(uint32_t entry) {
-    return (entry & BLOCK_SIZE_MASK) >> 20;
-}
 
 /* Getters for superbock and inode */
 #define OUICHEFS_SB(sb) (sb->s_fs_info)
