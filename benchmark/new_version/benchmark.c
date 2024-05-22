@@ -143,10 +143,11 @@ void write_performance(const char * path, BenchmarkResult * result) {
     free(data);
 }
 
-int check_write_read(const char * path, const char * test_data) {
+bool check_write_read(const char * path, const char * test_data) {
     FILE * file;
     size_t data_len = strlen(test_data);
     char * read_buffer = (char *) malloc(data_len);
+    bool check_result = true;
     if(read_buffer == NULL) {
         perror("malloc failed");
         exit(EXIT_FAILURE);
@@ -182,14 +183,10 @@ int check_write_read(const char * path, const char * test_data) {
 
     read_buffer[data_len] = '\0';
     
-    if(strcmp(test_data, read_buffer) == 0) {
-        printf("Check write/read ok\n");
-    } else {
-        printf("Check write/read failed\n");
-        return -1;
+    if(strcmp(test_data, read_buffer) != 0) {
+        check_result = false;
     }
-
-    return 0;
+    return check_result;
 }
 
 void setup(const char * folder, size_t N) {
@@ -240,11 +237,9 @@ void run_benchmark(const char * folder_path, size_t N) {
         struct dirent *entry;
         struct stat st;
         size_t i = 0;
-        printf("Start read benchmark: \n");
         while((entry = readdir(dir)) != NULL && i < N) {
             snprintf(file_path, sizeof(file_path), "%s%s", folder_path, entry->d_name);
             if (stat(file_path, &st) == 0 && S_ISREG(st.st_mode)) {
-                printf("read_performance for file: %s\n", file_path);
                 read_performance(file_path, &read_benchmarks[i]);
                 total_read_time += read_benchmarks[i].time;
                 i++;
@@ -252,10 +247,8 @@ void run_benchmark(const char * folder_path, size_t N) {
         }
         closedir(dir);
 
-        printf("Start write benchmark: \n");
         for (size_t j = 0; j < N; ++j) {
             snprintf(file_path, sizeof(file_path), "%swrite_file%zu", folder_path, j);
-            printf("write_performance for file: %s\n", file_path);
             write_performance(file_path, &write_benchmarks[j]);
             total_write_time += write_benchmarks[j].time;
         }
@@ -266,8 +259,8 @@ void run_benchmark(const char * folder_path, size_t N) {
         total_write_time = 0;
     }
     
-    printf("Average Read Time: %f seconds\n", total_avg_read_time/10);
-    printf("Average Write Time: %f seconds\n", total_avg_write_time/10);
+    printf("    Average Read Time: %f seconds\n", total_avg_read_time/10);
+    printf("    Average Write Time: %f seconds\n", total_avg_write_time/10);
 
     free(read_benchmarks);
     free(write_benchmarks);
@@ -287,11 +280,10 @@ int run_write_read_check(const char * folder_path, const char * result_path, int
     struct dirent *entry;
     struct stat st;
     size_t i = 0;
-    printf("Start read benchmark: \n");
+    bool check_result = true;
     while((entry = readdir(dir)) != NULL && i < N) {
         snprintf(path, sizeof(path), "%s%s", folder_path, entry->d_name);
         if (stat(path, &st) == 0 && S_ISREG(st.st_mode)) {
-            printf("retrieving test data from : %s\n", path);
 
             file = fopen(path, "rb");
             if(file == NULL) {
@@ -308,9 +300,14 @@ int run_write_read_check(const char * folder_path, const char * result_path, int
 
             fclose(file);
 
-            check_write_read(result_path, test_data);
+            check_result &= check_write_read(result_path, test_data);
             i++;
         }
+    }
+    if(!check_result) {
+        printf("    Check write/read failed\n");
+    } else {
+        printf("    Check write/read ok\n");
     }
     closedir(dir);
 }
