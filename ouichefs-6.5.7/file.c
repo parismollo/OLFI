@@ -222,6 +222,21 @@ static int ouichefs_open(struct inode *inode, struct file *file) {
 	return 0;
 }
 
+
+/*ioctl functions*/
+uint32_t create_block_entry(uint32_t block_number, uint32_t block_size) {
+    return (block_size << 20) | (block_number & BLOCK_NUMBER_MASK);
+}
+
+uint32_t get_block_number(uint32_t entry) {
+    return (entry & BLOCK_NUMBER_MASK);
+}
+
+uint32_t get_block_size(uint32_t entry) {
+    return (entry & BLOCK_SIZE_MASK) >> 20;
+}
+
+
 static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, loff_t *ppos)
 {	
 	pr_info("Enter in ouichefs_read\n");
@@ -251,7 +266,7 @@ static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, l
 		return bytes_read;
 	}
 
-	struct buffer_head *bh = sb_bread(sb, index->blocks[iblock]);
+	struct buffer_head *bh = sb_bread(sb, get_block_number(index->blocks[iblock]));
 	if (!bh) {
 		brelse(bh_index);
 		return -EIO;
@@ -317,6 +332,9 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 	iblock = *ppos / OUICHEFS_BLOCK_SIZE;
 	if (index->blocks[iblock] == 0) {
 		bno = get_free_block(sbi);
+		pr_info("if()Before BNO: %u\n", bno);
+		bno = create_block_entry((uint32_t)bno, (uint32_t)0);
+		pr_info("if()After BNO: %u\n", bno);
 		if (!bno) {
 			brelse(bh_index);
 			return -ENOSPC;
@@ -326,9 +344,12 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 		sync_dirty_buffer(bh_index);
 	} else {
 		bno = index->blocks[iblock];
+		// pr_info("else()Before BNO: %u\n", bno); 
+		// bno = create_block_entry((uint32_t)bno, (uint32_t)0);
+		// pr_info("else()After BNO: %u\n", bno);
 	}
-	
-	struct buffer_head *bh = sb_bread(sb, bno);
+	// here something can go wrong
+	struct buffer_head *bh = sb_bread(sb, get_block_number(bno));
 	if (!bh) {
 		brelse(bh_index);
 		return -EIO;
@@ -346,11 +367,17 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 	}
 	mark_buffer_dirty(bh);
 	sync_dirty_buffer(bh);
-
+	pr_info("bytes_not_write: %ld\n", bytes_not_write);
 	bytes_write = bytes_to_write - bytes_not_write;
 	*ppos += bytes_write;
 
 	brelse(bh);
+
+	uint32_t block_number = get_block_number(bno);
+	uint32_t block_size = get_block_size(bno);
+	block_size = block_size + (uint32_t)bytes_write;
+	pr_info("BLOCK NUMBER: %u BLOCK SIZE: %u\n", block_number, block_size);
+	index->blocks[iblock] = create_block_entry(block_number, block_size);
 
 	if (*ppos > inode->i_size)
 		inode->i_size = *ppos;
@@ -362,8 +389,9 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 	mark_inode_dirty(inode);
 
 	if (nr_blocks_old > inode->i_blocks) {
+		pr_info("in case we come here!\n");
 		for (int i = inode->i_blocks - 1; i < nr_blocks_old - 1; i++) {
-			put_block(OUICHEFS_SB(sb), index->blocks[i]);
+			put_block(OUICHEFS_SB(sb), index->blocks[i]); // maybe here get_block_number
 			index->blocks[i] = 0;
 		}
 	}
@@ -373,19 +401,6 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 
 	pr_info("Total bytes write: %ld\n", bytes_write);
 	return bytes_write;
-}
-
-/*ioctl functions*/
-uint32_t create_block_entry(uint32_t block_number, uint32_t block_size) {
-    return (block_size << 20) | (block_number & BLOCK_NUMBER_MASK);
-}
-
-uint32_t get_block_number(uint32_t entry) {
-    return (entry & BLOCK_NUMBER_MASK);
-}
-
-uint32_t get_block_size(uint32_t entry) {
-    return (entry & BLOCK_SIZE_MASK) >> 20;
 }
 
 static long ouichefs_ioctl(struct file *file, unsigned int cmd, unsigned long arg) {
