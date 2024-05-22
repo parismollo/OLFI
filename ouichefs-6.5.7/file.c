@@ -222,227 +222,183 @@ static int ouichefs_open(struct inode *inode, struct file *file) {
 	return 0;
 }
 
-/*
-- function returns a ssize_t (signed size type) to indicate number of bytes read or an error
-- file is a pointer to a file (file being read)
-- data  is user space buffer
-- len number of bytes to read
-- pos pointer to the file offset
+static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, loff_t *ppos)
+{	
+	pr_info("Enter in ouichefs_read\n");
+	struct inode *inode = filep->f_inode;
+	struct super_block *sb = filep->f_inode->i_sb;
+	struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
+	struct ouichefs_file_index_block *index;
+	struct buffer_head *bh_index;
+	size_t bytes_to_read;
+	size_t bytes_not_read;
+	size_t bytes_read = 0;
+	sector_t iblock;
+	size_t offset;
 
-(1) Check if current file position is greater then or equal to the file size (i_size). We return 0 because there are nothing left to read.
-(2) get super block (metadata about filesystem); iblock is the index of current block containing the file position. To get the index of the block we do current offset
-divided by the block size of ouichefs. We then retrieve the inode (custom inode) for ouichefs.
-(3) Check if block index is within a valid range. 
-(4) sb bread reads the block containing the file index block from disk. The index block maps file offsets to actual data blocks. Converts raw data from disk into structured format ouichefs_file_index_block
-(5) retrieves the block number corresponding to the current block index, this number will point to the actual data block on disk
-(6) read the actual data block from disk
-(7) intially the buffer will point to the beggining of the data block, but we need to adjust for the right offset, that will find the correct offset within that block
-(8) it reads the entire buffer or len so that it does not attempt to read beyonf the avaialable data in the block
-(9) transfer data from kernel space to the user space buffer, and calcualates how many bytes were copied from what was expected
-(10) update offset based on how much was copied and ensure file pointer reflects new position
-(11) release index block and data block
-*/
-static ssize_t ouichefs_read(struct file *file, char __user *data, size_t len, loff_t *offset)
-{
-
-
-	printk(KERN_INFO "ouiches_read(): file_name = %s, len = %zu, current_offset = %lld\n", file_dentry(file)->d_name.name, len, (long long)*offset);
-	printk(KERN_INFO "ouiches_read(): started\n");
-
-	// (1)
-	if (*offset >= file->f_inode->i_size) {
-		printk(KERN_INFO "ouiches_read(): offset goes beyond file size\n");
-		return 0;
+	if (*ppos >= inode->i_size) {
+		return bytes_read;
 	}
 
-	unsigned long bytes_to_copy = 0;
-	unsigned long bytes_copied = 0;
-
-	// (2) 
-	struct super_block *super_blk = file->f_inode->i_sb;
-	sector_t block_index = *offset / OUICHEFS_BLOCK_SIZE;
-	printk(KERN_INFO "ouiches_read(): block_index = %llu\n", (unsigned long long)block_index);
-	struct ouichefs_file_index_block *file_index;
-	struct buffer_head *buffer_head_index;
-	struct ouichefs_inode_info *inode_info = OUICHEFS_INODE(file->f_inode);
-
-	// (3)
-	if (block_index >= OUICHEFS_BLOCK_SIZE >> 2)
-		return -EFBIG;
-
-	// (4)
-	buffer_head_index = sb_bread(super_blk, inode_info->index_block);
-	if (!buffer_head_index)
+	bh_index = sb_bread(sb, ci->index_block);
+	if (!bh_index)
 		return -EIO;
-	file_index = (struct ouichefs_file_index_block *)buffer_head_index->b_data;
+	index = (struct ouichefs_file_index_block *)bh_index->b_data;
 
-	// (5)
-	int block_number = file_index->blocks[block_index];
-	printk(KERN_INFO "ouiches_read(): block_number = %d\n", block_number);
+	iblock = *ppos / OUICHEFS_BLOCK_SIZE;
+	if (index->blocks[iblock] == 0) {
+		brelse(bh_index);
+		return bytes_read;
+	}
 
-	if (block_number == 0) {
-		brelse(buffer_head_index);
+	struct buffer_head *bh = sb_bread(sb, index->blocks[iblock]);
+	if (!bh) {
+		brelse(bh_index);
 		return -EIO;
 	}
 
-	// (6)
-	struct buffer_head *buffer_head_data = sb_bread(super_blk, block_number);
-
-	if (!buffer_head_data) {
-		brelse(buffer_head_index);
-		return -EIO;
+	offset = *ppos % OUICHEFS_BLOCK_SIZE;
+	size_t tmp = inode->i_size - *ppos;
+	bytes_to_read = min((size_t) OUICHEFS_BLOCK_SIZE, tmp);
+	bytes_not_read = copy_to_user(buf, bh->b_data + offset, bytes_to_read);
+	if (bytes_not_read) {
+		brelse(bh);
+		brelse(bh_index);
+		return -EFAULT;
 	}
 
-	// (7)
-	char *data_buffer = buffer_head_data->b_data;
-	data_buffer += *offset % OUICHEFS_BLOCK_SIZE;
+	bytes_read = bytes_to_read - bytes_not_read;
+	*ppos += bytes_read;
+	
+	brelse(bh);
+	brelse(bh_index);
 
-	// (8)
-	if (buffer_head_data->b_size < len)
-		bytes_to_copy = buffer_head_data->b_size;
-	else
-		bytes_to_copy = len;
-	printk(KERN_INFO "ouiches_read(): bytes_to_copy = %lu\n", bytes_to_copy);
-
-	// (9)
-	bytes_copied = bytes_to_copy - copy_to_user(data, data_buffer, bytes_to_copy);
-	printk(KERN_INFO"ouiches_read(): bytes_copied = %lu\n", bytes_copied);
-
-	// (10)
-	*offset += bytes_copied;
-	file->f_pos = *offset;
-	printk(KERN_INFO "ouiches_read(): new offset = %lld\n", (long long)*offset);
-
-	// (11)
-	brelse(buffer_head_data);
-	brelse(buffer_head_index);
-	printk(KERN_INFO "ouiches_read(): finished\n");
-	return bytes_copied;
+	pr_info("Total bytes read: %ld\n", bytes_read);
+	return bytes_read;
 }
 
-static ssize_t ouichefs_write(struct file *file, const char __user *data, size_t len, loff_t *pos) {
-    struct inode *inode = file->f_inode;
-    struct super_block *sb = inode->i_sb;
+static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t len, loff_t *ppos)
+{	
+	pr_info("Enter in ouichefs_write\n");
+	struct inode *inode = filep->f_inode;
+	struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
+	struct super_block *sb = inode->i_sb;
 	struct ouichefs_sb_info *sbi = OUICHEFS_SB(sb);
-    struct ouichefs_inode_info *inode_info = OUICHEFS_INODE(inode);
-    struct ouichefs_file_index_block *file_index;
-    struct buffer_head *index_bh, *data_bh;
-    char *data_buffer;
-    size_t bytes_to_write, bytes_written = 0;
-    sector_t logical_block;
-    int block_number;
+	struct buffer_head *bh_index;
+	struct ouichefs_file_index_block *index;
+	size_t bytes_to_write; 
+	size_t bytes_write = 0;
+	size_t bytes_not_write;
+	sector_t iblock;
+	size_t offset;
+	size_t remaining;
+	int bno;
+	
+	if (*ppos + len > OUICHEFS_MAX_FILESIZE)
+		return -ENOSPC;
 
-    printk(KERN_INFO "ouichefs_write: Starting write operation\n");
-    printk(KERN_INFO "ouichefs_write: Position: %lld, Length: %zu\n", *pos, len);
-
-
-	// Add to fix file deletion issues
-	if (*pos + len > OUICHEFS_MAX_FILESIZE)
-    	return -ENOSPC;
-    uint32_t nr_allocs = max(*pos + (unsigned int) len, inode->i_size) / OUICHEFS_BLOCK_SIZE;
-    if (nr_allocs > inode->i_blocks - 1)
-	{
+	uint32_t nr_allocs = max(*ppos + (unsigned int) len, inode->i_size) / OUICHEFS_BLOCK_SIZE;
+	if (nr_allocs > inode->i_blocks - 1)
 		nr_allocs -= inode->i_blocks - 1;
-	}else{
+	else
 		nr_allocs = 0;
+	if (nr_allocs > sbi->nr_free_blocks)
+		return -ENOSPC;
+
+	if (filep->f_flags && O_APPEND) {
+		*ppos = inode->i_size;
 	}
 
-	if (nr_allocs > sbi->nr_free_blocks)
-    	return -ENOSPC;
+	bh_index = sb_bread(sb, ci->index_block);
+	if (!bh_index)
+		return -EIO;
+	index = (struct ouichefs_file_index_block *)bh_index->b_data;
 
-	if (file->f_flags & O_APPEND) {
-        *pos = inode->i_size;
-        printk(KERN_INFO "ouichefs_write: Append mode, new position: %lld\n", *pos);
-    }
+	iblock = *ppos / OUICHEFS_BLOCK_SIZE;
+	if (index->blocks[iblock] == 0) {
+		bno = get_free_block(sbi);
+		if (!bno) {
+			brelse(bh_index);
+			return -ENOSPC;
+		}
+		index->blocks[iblock] = bno;
+		mark_buffer_dirty(bh_index);
+		sync_dirty_buffer(bh_index);
+	} else {
+		bno = index->blocks[iblock];
+	}
+	
+	struct buffer_head *bh = sb_bread(sb, bno);
+	if (!bh) {
+		brelse(bh_index);
+		return -EIO;
+	}
 
-    if (*pos >= OUICHEFS_MAX_FILESIZE) {
-        printk(KERN_ERR "ouichefs_write: Position exceeds max file size\n");
-        return -EFBIG;
-    }
+	offset = *ppos % OUICHEFS_BLOCK_SIZE;
+	remaining = OUICHEFS_BLOCK_SIZE - offset;
+	bytes_to_write = min(len, remaining);
 
-    while (len > 0) {
-        // Calculate the logical block number to write to
-        logical_block = *pos / OUICHEFS_BLOCK_SIZE;
-        printk(KERN_INFO "ouichefs_write: Writing to logical block: %lu\n", (unsigned long)logical_block);
+	bytes_not_write = copy_from_user(bh->b_data + offset, buf, bytes_to_write);
+	if (bytes_not_write) {
+		brelse(bh);
+		brelse(bh_index);
+		return -EFAULT;
+	}
+	mark_buffer_dirty(bh);
+	sync_dirty_buffer(bh);
 
-        // Read the file's index block
-        index_bh = sb_bread(sb, inode_info->index_block);
-        if (!index_bh) {
-            printk(KERN_ERR "ouichefs_write: Failed to read index block\n");
-            return -EIO;
-        }
-        file_index = (struct ouichefs_file_index_block *)index_bh->b_data;
+	bytes_write = bytes_to_write - bytes_not_write;
+	*ppos += bytes_write;
 
-        // Check if the block is already allocated
-        if (file_index->blocks[logical_block] == 0) {
-            // Allocate a new block
-            block_number = get_free_block(OUICHEFS_SB(sb));
-            if (!block_number) {
-                brelse(index_bh);
-                printk(KERN_ERR "ouichefs_write: No space left to allocate new block\n");
-                return -ENOSPC;
-            }
-            file_index->blocks[logical_block] = block_number;
-            mark_buffer_dirty(index_bh);
-            sync_dirty_buffer(index_bh);
-            printk(KERN_INFO "ouichefs_write: Allocated new block number: %d\n", block_number);
-        } else {
-            block_number = file_index->blocks[logical_block];
-            printk(KERN_INFO "ouichefs_write: Using existing block number: %d\n", block_number);
-        }
+	brelse(bh);
 
-        // Read or initialize the data block
-        data_bh = sb_bread(sb, block_number);
-        if (!data_bh) {
-            brelse(index_bh);
-            printk(KERN_ERR "ouichefs_write: Failed to read data block\n");
-            return -EIO;
-        }
-        data_buffer = data_bh->b_data;
+	if (*ppos > inode->i_size)
+		inode->i_size = *ppos;
 
-        // Calculate the amount of data to write in this block
-        bytes_to_write = min(len, (size_t)(OUICHEFS_BLOCK_SIZE - (*pos % OUICHEFS_BLOCK_SIZE)));
-        printk(KERN_INFO "ouichefs_write: Bytes to write in this iteration: %zu\n", bytes_to_write);
+	uint32_t nr_blocks_old = inode->i_blocks;
 
-        // Copy data from userspace to the data block
-        if (copy_from_user(data_buffer + (*pos % OUICHEFS_BLOCK_SIZE), data, bytes_to_write)) {
-            brelse(data_bh);
-            brelse(index_bh);
-            printk(KERN_ERR "ouichefs_write: Failed to copy data from user space\n");
-            return -EFAULT;
-        }
+	inode->i_blocks = inode->i_size / OUICHEFS_BLOCK_SIZE + 2;
+	inode->i_mtime = inode->i_ctime = current_time(inode);
+	mark_inode_dirty(inode);
 
-        mark_buffer_dirty(data_bh);
-        sync_dirty_buffer(data_bh);
-        brelse(data_bh);
-        brelse(index_bh);
+	if (nr_blocks_old > inode->i_blocks) {
+		for (int i = inode->i_blocks - 1; i < nr_blocks_old - 1; i++) {
+			put_block(OUICHEFS_SB(sb), index->blocks[i]);
+			index->blocks[i] = 0;
+		}
+	}
+	mark_buffer_dirty(bh_index);
+	sync_dirty_buffer(bh_index);
+	brelse(bh_index);
 
-        // Update pointers and counters
-        *pos += bytes_to_write;
-        data += bytes_to_write;
-        len -= bytes_to_write;
-        bytes_written += bytes_to_write;
-        printk(KERN_INFO "ouichefs_write: Updated position: %lld, Bytes written so far: %zu\n", *pos, bytes_written);
-
-        // Update the file size if necessary
-        if (*pos > inode->i_size) {
-            inode->i_size = *pos;
-            mark_inode_dirty(inode);
-            printk(KERN_INFO "ouichefs_write: Updated file size: %lld\n", inode->i_size);
-        }
-    }
-
-    printk(KERN_INFO "ouichefs_write: Write operation completed, total bytes written: %zu\n", bytes_written);
-    return bytes_written;
+	pr_info("Total bytes write: %ld\n", bytes_write);
+	return bytes_write;
 }
 
+/*
+static long ouichefs_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
+{
+	switch (cmd) {
+		case OUICHEFS_IOCTL:
+
+			if (copy_to_user((loff_t __user *) arg, &filep->f_inode->i_size, sizeof(filep->f_inode->i_size))) {
+				return -EFAULT;
+			}
+			break;
+		default:
+			return -ENOTTY;
+	}
+	return 0;
+}
+*/
 
 const struct file_operations ouichefs_file_ops = {
 	.owner = THIS_MODULE,
 	.open = ouichefs_open,
+	.read = ouichefs_read,	
+	.write = ouichefs_write,
 	.llseek = generic_file_llseek,
 	.read_iter = generic_file_read_iter,
-	.read = ouichefs_read,
-	.write = ouichefs_write,
-	.write_iter = generic_file_write_iter
+	.write_iter = generic_file_write_iter,
+	//.unlocked_ioctl = ouichefs_ioctl
 };
