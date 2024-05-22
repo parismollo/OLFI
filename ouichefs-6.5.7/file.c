@@ -239,7 +239,7 @@ uint32_t get_block_size(uint32_t entry) {
 
 static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, loff_t *ppos)
 {	
-	pr_info("Enter in ouichefs_read\n");
+	//pr_info("Enter in ouichefs_read\n");
 	struct inode *inode = filep->f_inode;
 	struct super_block *sb = filep->f_inode->i_sb;
 	struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
@@ -288,13 +288,13 @@ static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, l
 	brelse(bh);
 	brelse(bh_index);
 
-	pr_info("Total bytes read: %ld\n", bytes_read);
+	//pr_info("Total bytes read: %ld\n", bytes_read);
 	return bytes_read;
 }
 
 static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t len, loff_t *ppos)
 {	
-	pr_info("Enter in ouichefs_write\n");
+	//pr_info("Enter in ouichefs_write\n");
 	struct inode *inode = filep->f_inode;
 	struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
 	struct super_block *sb = inode->i_sb;
@@ -399,7 +399,7 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 	sync_dirty_buffer(bh_index);
 	brelse(bh_index);
 
-	pr_info("Total bytes write: %ld\n", bytes_write);
+	//pr_info("Total bytes write: %ld\n", bytes_write);
 	return bytes_write;
 }
 
