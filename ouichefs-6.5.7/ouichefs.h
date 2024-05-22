@@ -66,6 +66,16 @@ struct ouichefs_inode_info {
 #define OUICHEFS_INODES_PER_BLOCK \
 	(OUICHEFS_BLOCK_SIZE / sizeof(struct ouichefs_inode))
 
+#define OUICHEFS_IOC_MAGIC 'o'
+#define OUICHEFS_IOC_GET_INFO _IOR(OUICHEFS_IOC_MAGIC, 1, struct ouichefs_ioctl_info)
+
+struct ouichefs_ioctl_info {
+    uint32_t used_blocks;
+    uint32_t partially_filled_blocks;
+    uint32_t internal_fragmentation;
+ 	uint32_t blocks[OUICHEFS_BLOCK_SIZE >> 2];
+};
+
 struct ouichefs_sb_info {
 	uint32_t magic; /* Magic number */
 
