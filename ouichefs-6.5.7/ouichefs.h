@@ -8,6 +8,7 @@
 #define _OUICHEFS_H
 
 #include <linux/fs.h>
+#include <linux/ioctl.h>
 
 #define OUICHEFS_MAGIC 0x48434957
 
@@ -17,6 +18,10 @@
 #define OUICHEFS_MAX_FILESIZE (1 << 22) /* 4 MiB */
 #define OUICHEFS_FILENAME_LEN 28
 #define OUICHEFS_MAX_SUBFILES 128
+
+
+#define BLOCK_NUMBER_MASK 0x000FFFFF  // Mask for the lower 20 bits
+#define BLOCK_SIZE_MASK 0xFFF00000    // Mask for the upper 12 bits
 
 /*
  * ouiche_fs partition layout
@@ -35,6 +40,7 @@
  * +---------------+
  *
  */
+
 
 struct ouichefs_inode {
 	uint32_t i_mode; /* File mode */
@@ -100,6 +106,19 @@ struct inode *ouichefs_iget(struct super_block *sb, unsigned long ino);
 extern const struct file_operations ouichefs_file_ops;
 extern const struct file_operations ouichefs_dir_ops;
 extern const struct address_space_operations ouichefs_aops;
+
+/*ioctl functions*/
+uint32_t create_block_entry(uint32_t block_number, uint32_t block_size) {
+    return (block_size << 20) | (block_number & BLOCK_NUMBER_MASK);
+}
+
+uint32_t get_block_number(uint32_t entry) {
+    return (entry & BLOCK_NUMBER_MASK);
+}
+
+uint32_t get_block_size(uint32_t entry) {
+    return (entry & BLOCK_SIZE_MASK) >> 20;
+}
 
 /* Getters for superbock and inode */
 #define OUICHEFS_SB(sb) (sb->s_fs_info)
