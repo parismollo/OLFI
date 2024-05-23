@@ -354,11 +354,70 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 		brelse(bh_index);
 		return -EIO;
 	}
+	
 
 	offset = *ppos % OUICHEFS_BLOCK_SIZE;
 	remaining = OUICHEFS_BLOCK_SIZE - offset;
 	bytes_to_write = min(len, remaining);
 
+	//check if we have enough blocks ==> number_of_blocks_needed
+	size_t number_of_blocks_needed = (len - offset)/OUICHEFS_BLOCK_SIZE;
+	if (number_of_blocks_needed + inode->i_blocks > (OUICHEFS_BLOCK_SIZE >> 2) - 1) {
+		brelse(bh);
+		brelse(bh_index);
+		return -ENOSPC;
+	}
+	
+	int cmpt = 0;
+	size_t position_to_copy = -1;
+	for (size_t i = offset ; i < OUICHEFS_BLOCK_SIZE; i++) {		
+		
+		if (!bh->b_data[i]){
+			if (position_to_copy == -1){
+				position_to_copy = i;
+			}
+			cmpt++;
+		}else{
+			if (position_to_copy != -1){
+				break;
+			}
+		}
+	}
+	
+	if (position_to_copy != -1){
+		for (int j = inode->i_blocks - 2; j > iblock; j--) {
+			index->blocks[j + number_of_blocks_needed] = index->blocks[j];
+		}
+
+		for (size_t i = 1; i <= number_of_blocks_needed; i++){
+			bno = get_free_block(sbi);
+			if (!bno) {
+				brelse(bh);
+				brelse(bh_index);
+				return -ENOSPC;
+			}
+			bno = create_block_entry((uint32_t)bno, (uint32_t)0);
+			index->blocks[iblock + i] = bno;
+		}
+
+		int current_bno = index->blocks[iblock +1];
+		struct buffer_head *tmpbh = sb_bread(sb, get_block_number(current_bno));
+		if (!bh) {
+			brelse(bh_index);
+			return -EIO;
+		}
+		
+		memcpy(tmpbh->b_data, bh->b_data + position_to_copy, cmpt);
+		mark_buffer_dirty(tmpbh);
+		sync_dirty_buffer(tmpbh);
+		uint32_t block_number = get_block_number(current_bno);
+		uint32_t block_size = get_block_size(current_bno);
+		block_size = block_size + (uint32_t)cmpt;
+		index->blocks[iblock +1] = create_block_entry(block_number, block_size);
+		
+
+	}
+	
 	bytes_not_write = copy_from_user(bh->b_data + offset, buf, bytes_to_write);
 	if (bytes_not_write) {
 		brelse(bh);
