@@ -15,6 +15,7 @@
 
 #include "ouichefs.h"
 #include "bitmap.h"
+#include <linux/unistd.h>
 
 /*
  * Map the buffer_head passed in argument with the iblock-th block of the file
@@ -273,8 +274,10 @@ static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, l
 	}
 
 	offset = *ppos % OUICHEFS_BLOCK_SIZE;
+	//uint32_t size = get_block_size(index->blocks[iblock]);
 	size_t tmp = inode->i_size - *ppos;
 	bytes_to_read = min((size_t) OUICHEFS_BLOCK_SIZE, tmp);
+	//bytes_to_read = (size_t) size;
 	bytes_not_read = copy_to_user(buf, bh->b_data + offset, bytes_to_read);
 	if (bytes_not_read) {
 		brelse(bh);
@@ -344,9 +347,6 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 		sync_dirty_buffer(bh_index);
 	} else {
 		bno = index->blocks[iblock];
-		// pr_info("else()Before BNO: %u\n", bno); 
-		// bno = create_block_entry((uint32_t)bno, (uint32_t)0);
-		// pr_info("else()After BNO: %u\n", bno);
 	}
 	// here something can go wrong
 	struct buffer_head *bh = sb_bread(sb, get_block_number(bno));
@@ -361,18 +361,21 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 	bytes_to_write = min(len, remaining);
 
 	//check if we have enough blocks ==> number_of_blocks_needed
-	size_t number_of_blocks_needed = (len - offset)/OUICHEFS_BLOCK_SIZE;
+	size_t number_of_blocks_needed = ((len + offset) / OUICHEFS_BLOCK_SIZE);
 	if (number_of_blocks_needed + inode->i_blocks > (OUICHEFS_BLOCK_SIZE >> 2) - 1) {
 		brelse(bh);
 		brelse(bh_index);
 		return -ENOSPC;
 	}
-	
+
+	pr_info("number_of_blocks_needed: %ld\n", number_of_blocks_needed); // 1
 	int cmpt = 0;
-	size_t position_to_copy = -1;
-	for (size_t i = offset ; i < OUICHEFS_BLOCK_SIZE; i++) {		
-		
-		if (!bh->b_data[i]){
+	int position_to_copy = -1;
+	for (size_t i = offset ; i < OUICHEFS_BLOCK_SIZE; i++) {
+		pr_info("b_data[i] %d \n", bh->b_data[i]);
+		if (bh->b_data[i] != 0){
+			
+			pr_info("here\n");
 			if (position_to_copy == -1){
 				position_to_copy = i;
 			}
@@ -382,14 +385,19 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 				break;
 			}
 		}
-	}
-	
+	} 
+	pr_info("cmpt: %d\n", cmpt); // 5
+	pr_info("position_to_copy: %d\n", position_to_copy); // 3
 	if (position_to_copy != -1){
-		for (int j = inode->i_blocks - 2; j > iblock; j--) {
+		number_of_blocks_needed++; // only do this if position_to_copy
+		for (int j = inode->i_blocks - 2; j > iblock; j--) { // -ici
+			pr_info("xx\n");
+			pr_info("j: %d and iblock: %llu\n", j, iblock);
 			index->blocks[j + number_of_blocks_needed] = index->blocks[j];
+			for(int k=0; k < 100000000000; k++) {}	
 		}
-
-		for (size_t i = 1; i <= number_of_blocks_needed; i++){
+		
+		for (int i = iblock + number_of_blocks_needed; i > iblock; i--){
 			bno = get_free_block(sbi);
 			if (!bno) {
 				brelse(bh);
@@ -397,25 +405,40 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 				return -ENOSPC;
 			}
 			bno = create_block_entry((uint32_t)bno, (uint32_t)0);
-			index->blocks[iblock + i] = bno;
+			pr_info("i = %d\n", i);
+			index->blocks[i] = bno;
 		}
 
-		int current_bno = index->blocks[iblock +1];
-		struct buffer_head *tmpbh = sb_bread(sb, get_block_number(current_bno));
+		int last_inserted_block = index->blocks[iblock + number_of_blocks_needed];
+		struct buffer_head *tmpbh = sb_bread(sb, get_block_number(last_inserted_block));
 		if (!bh) {
 			brelse(bh_index);
 			return -EIO;
 		}
 		
-		memcpy(tmpbh->b_data, bh->b_data + position_to_copy, cmpt);
+		char* ptr_to_copy_from = bh->b_data + position_to_copy;
+		
+		pr_info("pointer to ci = %s\n", ptr_to_copy_from);// degf
+		memcpy(tmpbh->b_data, ptr_to_copy_from, cmpt);
 		mark_buffer_dirty(tmpbh);
 		sync_dirty_buffer(tmpbh);
-		uint32_t block_number = get_block_number(current_bno);
-		uint32_t block_size = get_block_size(current_bno);
+		pr_info("data block 2: %d", tmpbh->b_data[0]);
+		pr_info("%d", tmpbh->b_data[1]);
+		pr_info("%d", tmpbh->b_data[2]);
+		pr_info("%d \n", tmpbh->b_data[3]);
+		uint32_t block_number = get_block_number(last_inserted_block);
+		uint32_t block_size = get_block_size(last_inserted_block);
 		block_size = block_size + (uint32_t)cmpt;
-		index->blocks[iblock +1] = create_block_entry(block_number, block_size);
-		
-
+		pr_info("block size %d\n", block_size);
+		index->blocks[iblock + number_of_blocks_needed] = create_block_entry(block_number, block_size);
+		memset(ptr_to_copy_from, 0, cmpt);
+		//mark_buffer_dirty(bh);
+		//sync_dirty_buffer(bh);
+		pr_info("data block 1 at offset 3: %d\n", bh->b_data[3]);
+		block_number = get_block_number(index->blocks[iblock]);
+		block_size = get_block_size(index->blocks[iblock]);
+		block_size = block_size - (uint32_t)cmpt;
+		index->blocks[iblock] = create_block_entry(block_number, block_size);
 	}
 	
 	bytes_not_write = copy_from_user(bh->b_data + offset, buf, bytes_to_write);
@@ -438,12 +461,14 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 	pr_info("BLOCK NUMBER: %u BLOCK SIZE: %u\n", block_number, block_size);
 	index->blocks[iblock] = create_block_entry(block_number, block_size);
 
-	if (*ppos > inode->i_size)
+	if (*ppos > inode->i_size){
 		inode->i_size = *ppos;
+	}
 
 	uint32_t nr_blocks_old = inode->i_blocks;
 
 	inode->i_blocks = inode->i_size / OUICHEFS_BLOCK_SIZE + 2;
+	pr_info("bytes_not_write: ==> inode->i_blocks is %lld\n", inode->i_blocks);
 	inode->i_mtime = inode->i_ctime = current_time(inode);
 	mark_inode_dirty(inode);
 
@@ -457,6 +482,7 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 	mark_buffer_dirty(bh_index);
 	sync_dirty_buffer(bh_index);
 	brelse(bh_index);
+	pr_info("new writes implem STEP 78\n");
 
 	//pr_info("Total bytes write: %ld\n", bytes_write);
 	return bytes_write;
