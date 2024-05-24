@@ -14,8 +14,10 @@ int main(){
         exit(EXIT_FAILURE);
     }
     fwrite("abcdefg", 1, 7, file);
+    // fclose(file);
+    // file = fopen("/mnt/ouichefs/test", "w");
     fseek(file, 3, SEEK_SET);
     fwrite("suite", 1, 5, file);
-    close(file);
+    fclose(file);
     return EXIT_SUCCESS;
 }
