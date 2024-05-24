@@ -36,6 +36,8 @@ hello world
 - To make it call our own function we need everytime to mount, why?
 - how it works this command: mount -o loop -t ouichefs /share/ouichefs_partition.img /mnt/ouichefs
 
+df /mnt/ouichefs/test
+
 
 
 [root@pnl usr]# sudo dd if=/dev/loop0 bs=4096 skip=436
@@ -65,3 +67,8 @@ sudo dd if=/dev/loop0 bs=4096 skip=435 count=1 | hexdump -C
 [root@pnl usr]# [  454.284493] audit: type=1106 audit(1716577047.751:56): pid=302 uid=0 auid=0 ses=2 subj=kernel msg'
 [  454.290936] audit: type=1104 audit(1716577047.752:57): pid=302 uid=0 auid=0 ses=2 subj=kernel msg='op=PAM:setcred'
 
+
+
+- regler size du block  -> ioctl 
+- regler i_block
+- regler read (effective size plutot) et implementer
