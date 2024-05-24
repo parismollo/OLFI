@@ -457,7 +457,7 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 
 	uint32_t block_number = get_block_number(bno);
 	uint32_t block_size = get_block_size(bno);
-	block_size = block_size + (uint32_t)bytes_write;
+	block_size = (block_size + (uint32_t)bytes_write);
 	pr_info("BLOCK NUMBER: %u BLOCK SIZE: %u\n", block_number, block_size);
 	index->blocks[iblock] = create_block_entry(block_number, block_size);
 
@@ -528,7 +528,7 @@ static long ouichefs_ioctl(struct file *file, unsigned int cmd, unsigned long ar
         info->blocks[info->used_blocks].effective_size = size;
         info->used_blocks++;
 
-        if (size < OUICHEFS_BLOCK_SIZE) {
+        if (size != 0 && size < OUICHEFS_BLOCK_SIZE) {
             info->partially_filled_blocks++;
             info->internal_fragmentation += (OUICHEFS_BLOCK_SIZE - size);
         }
