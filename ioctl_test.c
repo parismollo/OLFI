@@ -28,7 +28,12 @@ void print_ioctl_info(struct ouichefs_ioctl_info *info) {
     printf("Partially filled blocks: %u\n", info->partially_filled_blocks);
     printf("Internal fragmentation: %u bytes\n", info->internal_fragmentation);
     for (uint32_t i = 0; i < info->used_blocks; ++i) {
-        printf("Block %u: %u bytes\n", info->blocks[i].block_number, info->blocks[i].effective_size);
+        printf("Block %u: ", info->blocks[i].block_number);
+        if(info->blocks[i].effective_size == 0) {
+            printf("4096 bytes\n");
+        }else {
+            printf("%u bytes\n", info->blocks[i].effective_size);
+        }
     }
 }
 
