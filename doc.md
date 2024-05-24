@@ -35,3 +35,33 @@ hello world
 ```
 - To make it call our own function we need everytime to mount, why?
 - how it works this command: mount -o loop -t ouichefs /share/ouichefs_partition.img /mnt/ouichefs
+
+
+
+[root@pnl usr]# sudo dd if=/dev/loop0 bs=4096 skip=436
+[  440.951586] audit: type=1101 audit(1716577034.423:48): pid=299 uid=0 auid=0 ses=2 subj=kernel msg='op=PAM:account'
+[  440.959662] audit: type=1110 audit(1716577034.429:49): pid=299 uid=0 auid=0 ses=2 subj=kernel msg='op=PAM:setcred'
+00000000  64 65 66 67 00 00 00 00  00 00 00 00 00 00 00 00  |defg............|
+00000010  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|
+1+0 records in
+1+0 records out
+4096 bytes (4.1 kB, 4.0 KiB) copied, 0.00546013 s, 750 kB/s
+*
+00001000
+[root@pnl usr]# [  440.980933] audit: type=1105 audit(1716577034.430:50): pid=299 uid=0 auid=0 ses=2 subj=kernel msg'
+[  440.986617] audit: type=1106 audit(1716577034.447:51): pid=299 uid=0 auid=0 ses=2 subj=kernel msg='op=PAM:session'
+[  440.991881] audit: type=1104 audit(1716577034.447:52): pid=299 uid=0 auid=0 ses=2 subj=kernel msg='op=PAM:setcred'
+sudo dd if=/dev/loop0 bs=4096 skip=435 count=1 | hexdump -C
+[  454.247896] audit: type=1101 audit(1716577047.719:53): pid=302 uid=0 auid=0 ses=2 subj=kernel msg='op=PAM:account'
+[  454.256273] audit: type=1110 audit(1716577047.726:54): pid=302 uid=0 auid=0 ses=2 subj=kernel msg='op=PAM:setcred'
+00000000  61 62 63 73 75 69 74 65  00 00 00 00 00 00 00 00  |abcsuite........|
+00000010  00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  |................|[  454.270042] audit: type=1105 audit('
+
+1+0 records in
+1+0 records out
+4096 bytes (4.1 kB, 4.0 KiB) copied, 0.0124472 s, 329 kB/s
+*
+00001000
+[root@pnl usr]# [  454.284493] audit: type=1106 audit(1716577047.751:56): pid=302 uid=0 auid=0 ses=2 subj=kernel msg'
+[  454.290936] audit: type=1104 audit(1716577047.752:57): pid=302 uid=0 auid=0 ses=2 subj=kernel msg='op=PAM:setcred'
+
