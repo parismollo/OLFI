@@ -24,8 +24,8 @@ cd ../../
 # Start Linux
 ./start_linux.sh
 
-# Insert the ouichefs.ko kernel module
-insmod /share/ouichefs.ko
+# # Insert the ouichefs.ko kernel module
+# insmod /share/ouichefs.ko
 
-# Mount the test.img file to /mnt/ouichefs using the loop option
-mount -o loop /share/test.img /mnt/ouichefs
+# # Mount the test.img file to /mnt/ouichefs using the loop option
+# mount -o loop /share/test.img /mnt/ouichefs
