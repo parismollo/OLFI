@@ -433,15 +433,17 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 		uint32_t block_number = get_block_number(last_inserted_block);
 		uint32_t block_size = get_block_size(last_inserted_block);
 		block_size = block_size + (uint32_t)cmpt;
+		pr_info("new block_size = %u\n", block_size);
 		// pr_info("block size %d\n", block_size);
 		index->blocks[iblock + number_of_blocks_needed] = create_block_entry(block_number, block_size);
 		memset(ptr_to_copy_from, 0, cmpt);
 		//mark_buffer_dirty(bh);
 		//sync_dirty_buffer(bh);
 		// pr_info("data block 1 at offset 3: %d\n", bh->b_data[3]);
-		block_number = get_block_number(index->blocks[iblock]);
-		block_size = get_block_size(index->blocks[iblock]);
+		block_number = get_block_number(bno);
+		block_size = get_block_size(bno);
 		block_size = block_size - (uint32_t)cmpt;
+		pr_info("fragmented block_size before writing = %u\n", block_size);
 		index->blocks[iblock] = create_block_entry(block_number, block_size);
 	}
 	
@@ -461,7 +463,9 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 
 	uint32_t block_number = get_block_number(bno);
 	uint32_t block_size = get_block_size(bno);
+	pr_info("bytes_write = %ld\n", bytes_write);
 	block_size = (block_size + (uint32_t)bytes_write);
+	pr_info("fragmented block_size after writin = %u\n", block_size);
 	// pr_info("BLOCK NUMBER: %u BLOCK SIZE: %u\n", block_number, block_size);
 	index->blocks[iblock] = create_block_entry(block_number, block_size);
 
@@ -471,7 +475,11 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 	// commentaire: on a perdu abc et on lu 8 char le deux fois.
 	uint32_t nr_blocks_old = inode->i_blocks;
 
-	inode->i_blocks += number_of_blocks_needed;
+	if (inode->i_blocks == 0){
+		inode->i_blocks = inode->i_size / OUICHEFS_BLOCK_SIZE + 2;
+	} else {
+		inode->i_blocks += number_of_blocks_needed;
+	}
 	pr_info("inode->i_blocks is %lld\n", inode->i_blocks);
 	pr_info("block size: %u\n", block_size);
 	inode->i_mtime = inode->i_ctime = current_time(inode);
