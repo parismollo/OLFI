@@ -39,7 +39,9 @@ hello world
 df /mnt/ouichefs/test
 
 
-
+ 436  sudo dd if=/dev/loop0 bs=4096 skip=BLOCK_NUMBER count=1 | hexdump -C
+  437  sudo dd if=/dev/loop0 bs=4096 skip=436 count=1 | hexdump -C
+  438  sudo dd if=/dev/loop0 bs=4096 skip=435 count=1 | hexdump -
 [root@pnl usr]# sudo dd if=/dev/loop0 bs=4096 skip=436
 [  440.951586] audit: type=1101 audit(1716577034.423:48): pid=299 uid=0 auid=0 ses=2 subj=kernel msg='op=PAM:account'
 [  440.959662] audit: type=1110 audit(1716577034.429:49): pid=299 uid=0 auid=0 ses=2 subj=kernel msg='op=PAM:setcred'
@@ -72,3 +74,35 @@ sudo dd if=/dev/loop0 bs=4096 skip=435 count=1 | hexdump -C
 - regler size du block  -> ioctl 
 - regler i_block
 - regler read (effective size plutot) et implementer
+
+
+[   61.253842] ouichefs:ouichefs_write: ppos: 0
+[   61.254298] ouichefs:ouichefs_write: i_blocks before allocation = 1
+[   61.258997] ouichefs:ouichefs_write: i_blocks after allocation = 1
+[   61.259615] ouichefs:ouichefs_write: offset in the beginning: 0
+[   61.260093] ouichefs:ouichefs_write: cmpt: 0
+[   61.260340] ouichefs:ouichefs_write: position_to_copy: -1
+[   61.260886] ouichefs:ouichefs_write: number_of_blocks_needed: 0
+[   61.264241] ouichefs:ouichefs_write: bytes_write = 7
+[   61.264843] ouichefs:ouichefs_write: block number: 261 has block_size_fragment = 0 + 7
+[   61.265169] ouichefs:ouichefs_write: fragmented block_size after writin = 7
+[   61.265633] ouichefs:ouichefs_write: before check if inode->i_blocks == 0 we have: 1 blocks
+[   61.266057] ouichefs:ouichefs_write: inode->i_blocks is 2
+[   61.271301] ouichefs:ouichefs_write: ppos: 3
+[   61.272496] ouichefs:ouichefs_write: offset in the beginning: 3
+[   61.272779] ouichefs:ouichefs_write: found data that will need to be defragmented at b_data[3]: 100!
+[   61.273212] ouichefs:ouichefs_write: found data that will need to be defragmented at b_data[4]: 101!
+[   61.273806] ouichefs:ouichefs_write: found data that will need to be defragmented at b_data[5]: 102!
+[   61.274157] ouichefs:ouichefs_write: found data that will need to be defragmented at b_data[6]: 103!
+[   61.274623] ouichefs:ouichefs_write: cmpt: 4
+[   61.274776] ouichefs:ouichefs_write: position_to_copy: 3
+[   61.274948] ouichefs:ouichefs_write: number_of_blocks_needed: 1
+[   61.279197] ouichefs:ouichefs_write: ptr_to_copy_from: 100
+[   61.281185] ouichefs:ouichefs_write: new block number: 262; new block_size = 4
+[   61.281938] ouichefs:ouichefs_write: casted cmpt is 4
+[   61.282190] ouichefs:ouichefs_write: fragmented block_size before writing = 3
+[   61.284560] ouichefs:ouichefs_write: bytes_write = 5
+[   61.284818] ouichefs:ouichefs_write: block number: 261 has block_size_fragment = 3 + 5
+[   61.285087] ouichefs:ouichefs_write: fragmented block_size after writin = 8
+[   61.285512] ouichefs:ouichefs_write: before check if inode->i_blocks == 0 we have: 2 blocks
+[   61.285864] ouichefs:ouichefs_write: inode->i_blocks is 3
