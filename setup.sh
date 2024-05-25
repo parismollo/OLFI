@@ -22,7 +22,7 @@ cp test.img ../../share
 cd ../../
 
 # Start Linux
-./start_linux
+./start_linux.sh
 
 # Insert the ouichefs.ko kernel module
 insmod /share/ouichefs.ko
