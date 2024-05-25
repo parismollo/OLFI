@@ -242,7 +242,7 @@ uint32_t get_block_size(uint32_t entry) {
 
 static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, loff_t *ppos)
 {	
-	//pr_info("Enter in ouichefs_read\n");
+	pr_info("Enter in ouichefs_read\n");
 	struct inode *inode = filep->f_inode;
 	struct super_block *sb = filep->f_inode->i_sb;
 	struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
@@ -274,7 +274,7 @@ static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, l
 		brelse(bh_index);
 		return -EIO;
 	}
-
+	pr_info("I'm reading block number: %u\n", get_block_number(index->blocks[iblock]));
 	offset = *ppos % OUICHEFS_BLOCK_SIZE;
 	//uint32_t size = get_block_size(index->blocks[iblock]);
 	size_t tmp = inode->i_size - *ppos;
@@ -293,7 +293,7 @@ static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, l
 	brelse(bh);
 	brelse(bh_index);
 
-	//pr_info("Total bytes read: %ld\n", bytes_read);
+	pr_info("Total bytes read: %ld\n", bytes_read);
 	return bytes_read;
 }
 
