@@ -280,17 +280,31 @@ static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, l
 		brelse(bh_index);
 		return -EIO;
 	}
-	// pr_info("I'm reading block number: %u\n", get_block_number(bno));
-	uint32_t size = get_block_size(bno);
+	
 	offset = *ppos % OUICHEFS_BLOCK_SIZE;
-	//size_t tmp = inode->i_size - *ppos;
-	//bytes_to_read = min((size_t) OUICHEFS_BLOCK_SIZE, tmp);
-	if (size == 0) {
-		bytes_to_read = (size_t) OUICHEFS_BLOCK_SIZE;
+	uint32_t size = get_block_size(bno);
+	int start = -1;
+	int end = 0;
+	if (size != 0) { 
+		for (int i = offset; i < OUICHEFS_BLOCK_SIZE; i++) {
+			if (bh->b_data[i] != 0){ 
+				if (start == -1){
+					start = i;
+				}
+				end++;
+			}else{
+				if (start != -1){
+					break;
+				}
+			}
+		}
+		bytes_to_read = end;
 	} else {
-		bytes_to_read = (size_t) size;
+		start = offset;
+		bytes_to_read = (size_t) OUICHEFS_BLOCK_SIZE;
 	}
-	bytes_not_read = copy_to_user(buf, bh->b_data + offset, bytes_to_read);
+
+	bytes_not_read = copy_to_user(buf, bh->b_data + start, bytes_to_read);
 	if (bytes_not_read) {
 		brelse(bh);
 		brelse(bh_index);
@@ -299,7 +313,7 @@ static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, l
 
 	bytes_read = bytes_to_read - bytes_not_read;
 	*ppos += bytes_read;
-	// pr_info("bytes_read: %ld size: %u at block: %u\n", bytes_read, size, get_block_number(bno));
+
 	if (bytes_read >= size ) {
 		nb_block_read++;
 		*ppos += OUICHEFS_BLOCK_SIZE - bytes_read;
@@ -308,7 +322,7 @@ static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, l
 	brelse(bh);
 	brelse(bh_index);
 
-	// pr_info("Total bytes read: %ld\n", bytes_read);
+	pr_info("Total bytes read: %ld\n", bytes_read);
 	return bytes_read;
 }
 
