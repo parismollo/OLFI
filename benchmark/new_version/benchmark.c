@@ -76,8 +76,9 @@ void read_performance(const char * path, BenchmarkResult * result) {
     for(size_t i = 0; i < num_chunks; i++) {
         fseek(file, offsets[i], SEEK_SET);
         size_t bytes_read = fread(data, 1, chunk_size, file);
+        printf("file: %s bytes_read: %d chunk_size: %d\n", path, bytes_read, chunk_size);
         if(bytes_read != chunk_size) {
-            perror("fread failed");
+            // perror("fread failed 1");
             break;
         }
     }
@@ -174,7 +175,7 @@ bool check_write_read(const char * path, const char * test_data) {
     }
 
     if(fread(read_buffer, 1, data_len, file) != data_len) {
-        perror("fread failed");
+        perror("fread failed 2");
         fclose(file);
         return -1;
     }
