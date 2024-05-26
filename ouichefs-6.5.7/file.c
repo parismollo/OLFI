@@ -300,6 +300,7 @@ static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, l
 static int nb_block_read = 0;
 static ssize_t ouichefs_read_fragment(struct file *filep, char __user *buf, size_t len, loff_t *ppos)
 {	
+	//pr_info("Enter in ouichefs_read\n");
 	struct inode *inode = filep->f_inode;
 	struct super_block *sb = filep->f_inode->i_sb;
 	struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
@@ -311,9 +312,10 @@ static ssize_t ouichefs_read_fragment(struct file *filep, char __user *buf, size
 	sector_t iblock;
 	size_t offset;
 
-	if (*ppos >= inode->i_size) {
+	/*if (*ppos >= inode->i_size) {
 		return bytes_read;
-	}
+	}*/
+	//pr_info("nb_block_read = %d\n", nb_block_read);
 	if ( nb_block_read >= inode->i_blocks - 1) {
 		nb_block_read = 0;
 		return bytes_read;
@@ -376,7 +378,8 @@ static ssize_t ouichefs_read_fragment(struct file *filep, char __user *buf, size
 	
 	brelse(bh);
 	brelse(bh_index);
-	
+
+	// pr_info("Total bytes read: %ld\n", bytes_read);
 	return bytes_read;
 }
 
@@ -727,85 +730,160 @@ static long ouichefs_ioctl(struct file *file, unsigned int cmd, unsigned long ar
     return 0;
 }
 
+
+int apply_contigue(uint32_t current_block, struct super_block *sb)
+{
+
+	struct buffer_head *bh;
+	loff_t empty = -1;
+	loff_t full = 0;
+	loff_t copy_len = 0;
+	int active = 0;
+	
+	if (get_block_size(current_block) == 0) {
+		return 0;
+	}
+		
+	bh = sb_bread(sb, get_block_number(current_block));
+	if (!bh) {
+        return -EIO;
+    }
+	
+	for(loff_t block_pos = 0; block_pos < OUICHEFS_BLOCK_SIZE; block_pos++) {
+		if(bh->b_data[block_pos] != 0) {
+			if(active) {
+				copy_len = block_pos;
+			} else {
+				full = block_pos;
+			}
+		}else {
+			if(active && copy_len != 0) {
+				memcpy(bh->b_data + full + 1, bh->b_data + empty + 1, copy_len - empty);
+				memset(bh->b_data + empty + 1, 0, copy_len - empty);
+				full += copy_len - (empty + 1);
+				empty = copy_len + 1;
+				copy_len = 0;
+				active = 0;
+			} else {
+				active = 1;
+				empty = block_pos;
+			}
+		}
+	}
+
+	if (active && empty != OUICHEFS_BLOCK_SIZE - 1) {
+		memcpy(bh->b_data + full, bh->b_data + empty + 1, copy_len - empty);
+		memset(bh->b_data + empty + 1, 0, copy_len - empty);
+	}
+	mark_buffer_dirty(bh);
+	sync_dirty_buffer(bh);
+	brelse(bh);
+	return 0;
+}
+
 static long ouichefs_ioctl_defragmentation(struct file *file, unsigned int cmd, unsigned long arg)
 {
+	pr_info("inside ouichefs_ioctl_defragmentation()");
 	struct inode *inode = file->f_inode;
     struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
 	struct super_block *sb = inode->i_sb;
     struct ouichefs_file_index_block *file_index;
     struct buffer_head *bh_index;
 	struct buffer_head *bh;
+	struct buffer_head *bh_bis;
 
 	bh_index = sb_bread(sb, ci->index_block);
     if (!bh_index) {
         return -EIO;
     }
     file_index = (struct ouichefs_file_index_block *)bh_index->b_data;
-
-	loff_t empty = -1;
-	loff_t full = 0;
-	loff_t copy_len = 0;
-	int active = 0;
-	for (int i = 0; i < (OUICHEFS_BLOCK_SIZE >> 2); ++i) {
-		uint32_t current_block = file_index->blocks[i];
+	uint32_t current_block;
+	for (int i = 0; i < (OUICHEFS_BLOCK_SIZE >> 2); i++) {
+		current_block = file_index->blocks[i];
 		if (current_block == 0) {
-			//if(active)
 			break;
 		}
-		if (get_block_size(current_block) == 0) {
-			continue;
-		}
+		int n = apply_contigue(current_block, sb);
+		pr_info("resultat first contigue: %d\n", n);
 		
+	}
+	// pr_info("after first apply_contigue\n");
+	int copy_to = 0;
+	int copy_from = 0;
+	int copied_so_far = 0;
+	for (int i = 0; i < (OUICHEFS_BLOCK_SIZE >> 2); i++) {
+		pr_info("Block index: %d - ", i);
+		uint32_t current_block = file_index->blocks[i];
+		if(current_block == 0) {
+			break;
+		}
+		uint32_t size = get_block_size(current_block);
+		uint32_t size_left;
+		
+		if(size == 0) {
+			pr_info("full");
+			continue;
+
+		}
+
 		bh = sb_bread(sb, get_block_number(current_block));
 		if (!bh) {
-        	return -EIO;
-    	}
-	
-		for(loff_t block_pos = 0; block_pos < OUICHEFS_BLOCK_SIZE; block_pos++) {
-			pr_info("Block pos: %lld ", block_pos);
-			// ajouter cas lorsque on est actif et le fichier est fini donc faut faire la copie car block_pos = 4096.
-			if(bh->b_data[block_pos] != 0) {
-				pr_info("X ");
-				if(active) {
-					pr_info("ACTIVE: ");
-					pr_info("before copy_len = %lld ", copy_len);
-					copy_len = block_pos;
-					pr_info("after copy_len = %lld ", copy_len);
-				} else {
-					pr_info("NOT ACTIVE: ");
-					pr_info("before full = %lld ", full);
-					full = block_pos;
-					pr_info("after full = %lld ", full);
-				}
-			}else {
-				pr_info("O");
-				if(active && copy_len != 0) {
-					pr_info("ACTIVE & COPY_LEN > 0 ");
-					memcpy(bh->b_data + full + 1, bh->b_data + empty + 1, copy_len - empty);
-					memset(bh->b_data + empty + 1, 0, copy_len - empty);
-					pr_info("before full = %lld ", full);
-					full += copy_len - (empty + 1);
-					pr_info("after full = %lld ", full);
-					pr_info("before empty = %lld", empty);
-					empty = copy_len + 1;
-					pr_info("after empty = %lld", empty);
-					pr_info("before reset copy_len = %lld", copy_len);
-					copy_len = 0;
-					active = 0;
-				} else {
-					pr_info("NOT ACTIVE OR COPY_LEN == 0 ");
-					active = 1;
-					pr_info("before empty = %lld", empty);
-					empty = block_pos;
-					pr_info("after empty = %lld", empty);				
-				}
+			brelse(bh_index);
+			return -EIO;
+		}
+		
+		size_left = OUICHEFS_BLOCK_SIZE - size;
+		copy_to = i; 
+		int j = i + 1;
+		for(; j < (OUICHEFS_BLOCK_SIZE >> 2); j++) {
+			pr_info("Searching for data at %d", j);
+			copy_from = j;
+			uint32_t from_block = file_index->blocks[j];
+			uint32_t size_from = get_block_size(from_block);
+			size_t bytes_to_copy = min(size_left, size_from);
+			
+			bh_bis = sb_bread(sb, get_block_number(from_block));
+			if (!bh_bis) {
+				brelse(bh_bis);
+				return -EIO;
 			}
-			pr_info("\n");
+			memcpy(bh->b_data + size, bh_bis->b_data, bytes_to_copy);
+			memset(bh_bis->b_data, 0, bytes_to_copy);
+			size = size + bytes_to_copy;
+			current_block = create_block_entry(get_block_number(current_block), size);
+			file_index->blocks[i] = current_block;
+			pr_info("Copied data to %d from %d -", i, j);
+			if(bytes_to_copy != size_from) {
+				int x = apply_contigue(from_block, sb);
+				pr_info("resultat second contigue: %d\n", x);
+				pr_info("after second contigue");
+				size_from = size_from - bytes_to_copy;
+				uint32_t from_block = create_block_entry(get_block_number(from_block), size_from);
+				file_index->blocks[j] = from_block;
+				pr_info("Applied contigue");
+			}
+
+			mark_buffer_dirty(bh_bis);
+			sync_dirty_buffer(bh_bis);
+			brelse(bh_bis);
 		}
 		mark_buffer_dirty(bh);
 		sync_dirty_buffer(bh);
 		brelse(bh);
+		copied_so_far+= size;
+		if(copied_so_far >= inode->i_size) {
+			for(int z = j + 1; z < inode->i_blocks - 1; z++) {
+				put_block(OUICHEFS_SB(sb), file_index->blocks[z]);
+				file_index->blocks[z] = 0;
+				pr_info("putting blocks back");
+			}
+			inode->i_blocks = j + 1;
+			mark_inode_dirty(inode);
+		}
 	}
+	mark_buffer_dirty(bh_index);
+	sync_dirty_buffer(bh_index);
+	brelse(bh_index);
 	return 0;
 }
 
