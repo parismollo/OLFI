@@ -8,7 +8,6 @@
 #define _OUICHEFS_H
 
 #include <linux/fs.h>
-#include <linux/ioctl.h>
 
 #define OUICHEFS_MAGIC 0x48434957
 
@@ -18,10 +17,6 @@
 #define OUICHEFS_MAX_FILESIZE (1 << 22) /* 4 MiB */
 #define OUICHEFS_FILENAME_LEN 28
 #define OUICHEFS_MAX_SUBFILES 128
-
-
-#define BLOCK_NUMBER_MASK 0x000FFFFF  // Mask for the lower 20 bits
-#define BLOCK_SIZE_MASK 0xFFF00000    // Mask for the upper 12 bits
 
 /*
  * ouiche_fs partition layout
@@ -40,7 +35,6 @@
  * +---------------+
  *
  */
-
 
 struct ouichefs_inode {
 	uint32_t i_mode; /* File mode */
@@ -65,22 +59,6 @@ struct ouichefs_inode_info {
 
 #define OUICHEFS_INODES_PER_BLOCK \
 	(OUICHEFS_BLOCK_SIZE / sizeof(struct ouichefs_inode))
-
-#define OUICHEFS_IOC_MAGIC 'o'
-#define OUICHEFS_IOC_GET_INFO _IOR(OUICHEFS_IOC_MAGIC, 1, struct ouichefs_ioctl_info)
-#define OUICHEFS_IOC_GET_DEFRAG _IOWR(OUICHEFS_IOC_MAGIC, 2, struct ouichefs_ioctl_info)
-
-struct ouichefs_block_info {
-    uint32_t block_number;
-    uint32_t effective_size;
-};
-
-struct ouichefs_ioctl_info {
-    uint32_t used_blocks;               
-    uint32_t partially_filled_blocks;   
-    uint32_t internal_fragmentation;    
-    struct ouichefs_block_info blocks[OUICHEFS_BLOCK_SIZE >> 2];  
-};
 
 struct ouichefs_sb_info {
 	uint32_t magic; /* Magic number */
@@ -122,7 +100,6 @@ struct inode *ouichefs_iget(struct super_block *sb, unsigned long ino);
 extern const struct file_operations ouichefs_file_ops;
 extern const struct file_operations ouichefs_dir_ops;
 extern const struct address_space_operations ouichefs_aops;
-
 
 /* Getters for superbock and inode */
 #define OUICHEFS_SB(sb) (sb->s_fs_info)

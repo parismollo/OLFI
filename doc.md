@@ -167,7 +167,7 @@ read et write fragmented
 
 
 
-write 1.3
+write 1.3cat
 [root@pnl new_version]# ./benchmark_plus 
 Time taken to write 10MB: 0.000867 seconds
 [root@pnl new_version]# 

@@ -671,6 +671,7 @@ static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *bu
 	return bytes_write;
 }
 
+
 static long ouichefs_ioctl(struct file *file, unsigned int cmd, unsigned long arg) {
     struct inode *inode = file_inode(file);
     struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
@@ -726,6 +727,106 @@ static long ouichefs_ioctl(struct file *file, unsigned int cmd, unsigned long ar
     return 0;
 }
 
+static long ouichefs_ioctl_defragmentation(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	struct inode *inode = file->f_inode;
+    struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
+	struct super_block *sb = inode->i_sb;
+    struct ouichefs_file_index_block *file_index;
+    struct buffer_head *bh_index;
+	struct buffer_head *bh;
+
+	bh_index = sb_bread(sb, ci->index_block);
+    if (!bh_index) {
+        return -EIO;
+    }
+    file_index = (struct ouichefs_file_index_block *)bh_index->b_data;
+
+	loff_t empty = -1;
+	loff_t full = 0;
+	loff_t copy_len = 0;
+	int active = 0;
+	for (int i = 0; i < (OUICHEFS_BLOCK_SIZE >> 2); ++i) {
+		uint32_t current_block = file_index->blocks[i];
+		if (current_block == 0) {
+			//if(active)
+			break;
+		}
+		if (get_block_size(current_block) == 0) {
+			continue;
+		}
+		
+		bh = sb_bread(sb, get_block_number(current_block));
+		if (!bh) {
+        	return -EIO;
+    	}
+	
+		for(loff_t block_pos = 0; block_pos < OUICHEFS_BLOCK_SIZE; block_pos++) {
+			pr_info("Block pos: %lld ", block_pos);
+			// ajouter cas lorsque on est actif et le fichier est fini donc faut faire la copie car block_pos = 4096.
+			if(bh->b_data[block_pos] != 0) {
+				pr_info("X ");
+				if(active) {
+					pr_info("ACTIVE: ");
+					pr_info("before copy_len = %lld ", copy_len);
+					copy_len = block_pos;
+					pr_info("after copy_len = %lld ", copy_len);
+				} else {
+					pr_info("NOT ACTIVE: ");
+					pr_info("before full = %lld ", full);
+					full = block_pos;
+					pr_info("after full = %lld ", full);
+				}
+			}else {
+				pr_info("O");
+				if(active && copy_len != 0) {
+					pr_info("ACTIVE & COPY_LEN > 0 ");
+					memcpy(bh->b_data + full + 1, bh->b_data + empty + 1, copy_len - empty);
+					memset(bh->b_data + empty + 1, 0, copy_len - empty);
+					pr_info("before full = %lld ", full);
+					full += copy_len - (empty + 1);
+					pr_info("after full = %lld ", full);
+					pr_info("before empty = %lld", empty);
+					empty = copy_len + 1;
+					pr_info("after empty = %lld", empty);
+					pr_info("before reset copy_len = %lld", copy_len);
+					copy_len = 0;
+					active = 0;
+				} else {
+					pr_info("NOT ACTIVE OR COPY_LEN == 0 ");
+					active = 1;
+					pr_info("before empty = %lld", empty);
+					empty = block_pos;
+					pr_info("after empty = %lld", empty);				
+				}
+			}
+			pr_info("\n");
+		}
+		mark_buffer_dirty(bh);
+		sync_dirty_buffer(bh);
+		brelse(bh);
+	}
+	return 0;
+}
+
+static long my_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+    switch (cmd) {
+        case OUICHEFS_IOC_GET_INFO:
+			pr_info("info()\n");
+            ouichefs_ioctl(file, cmd, arg);
+			break;
+        case OUICHEFS_IOC_GET_DEFRAG:
+			pr_info("defrag()\n");
+            ouichefs_ioctl_defragmentation(file, cmd, arg);
+			break;
+		default:
+			pr_info("nothing()\n");
+			break;
+    }
+	return 0;
+}
+
 const struct file_operations ouichefs_file_ops = {
 	.owner = THIS_MODULE,
 	.open = ouichefs_open,
@@ -736,5 +837,5 @@ const struct file_operations ouichefs_file_ops = {
 	.read = ouichefs_read_fragment,
 	.write = ouichefs_write_fragment,
 	.write_iter = generic_file_write_iter,
-	.unlocked_ioctl = ouichefs_ioctl,
+	.unlocked_ioctl = my_ioctl
 };

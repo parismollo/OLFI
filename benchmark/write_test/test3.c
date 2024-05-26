@@ -12,7 +12,9 @@ int main() {
     char buffer[10];
     memset(buffer, 'a', sizeof(buffer) - 1);
     buffer[sizeof(buffer) - 1] = '\0';
-    fseek(file, 15, SEEK_SET);
+    // fseek(file, 15, SEEK_SET);
+    fwrite(buffer, 1, sizeof(buffer) - 1, file);
+    fseek(file, 50, SEEK_SET);
     fwrite(buffer, 1, sizeof(buffer) - 1, file);
     fclose(file);
     return EXIT_SUCCESS;

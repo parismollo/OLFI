@@ -1,0 +1,40 @@
+aaaaaaaaaaaaaaaaaaaa(full)
+
+                   (empty)
+aaaaaaaaaaaaaaaaaaa(copy_len)
+
+aaaaaaaaaaaaaaaaaaaa
+
+memcpy(buf + full + 1, buf + empty + 1, copy_len - empty - 1)
+memset(buf + empty +1, buf + copy_len, 0);
+boolean = false;
+
+full = copy_len - empty - 1
+empty = copy_len
+copy_len = -1
+
+aaaaaaaaaaaaaaaaaaaaa
+aaaaaaaaaaaaaaaaaaaaa(full)
+
+                     
+                     (empty)
+                     
+aaaaaaaaaaaaaaaaaaaaa                     
+
+
+				// if (active == 0) {
+				// 	if(empty != -1) {
+				// 		for(loff_t copy_len = empty + 1; copy_len < OUICHEFS_BLOCK_SIZE; copy_len++) {
+				// 			if(bh->b_data[block_pos] == 0) {
+				// 				// effectuer une copie
+				// 				//memset
+				// 				empty = -1
+				// 				break;
+				// 			}
+				// 		}
+				// 	}else {
+				// 		full = block_pos;
+				// 	}
+				// } else {
+
+				// }
