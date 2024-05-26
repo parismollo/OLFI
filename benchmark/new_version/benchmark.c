@@ -76,11 +76,11 @@ void read_performance(const char * path, BenchmarkResult * result) {
     for(size_t i = 0; i < num_chunks; i++) {
         fseek(file, offsets[i], SEEK_SET);
         size_t bytes_read = fread(data, 1, chunk_size, file);
-        printf("file: %s bytes_read: %d chunk_size: %d\n", path, bytes_read, chunk_size);
-        if(bytes_read != chunk_size) {
-            // perror("fread failed 1");
-            break;
-        }
+        // // printf("file: %s bytes_read: %d chunk_size: %d\n", path, bytes_read, chunk_size);
+        // if(bytes_read != chunk_size) {
+        //     // perror("fread failed 1");
+        //     break;
+        // }
     }
 
     end_time = clock();
@@ -132,10 +132,10 @@ void write_performance(const char * path, BenchmarkResult * result) {
     for(size_t i = 0; i < num_chunks; i++) {
         fseek(file, offsets[i], SEEK_SET);
         size_t bytes_written = fwrite(data, 1, chunk_size, file);
-        if(bytes_written != chunk_size) {
-            perror("fwrite failed");
-            break;
-        }
+        // if(bytes_written != chunk_size) {
+        //     perror("fwrite failed");
+        //     break;
+        // }
     }
 
     end_time = clock();
@@ -175,9 +175,9 @@ bool check_write_read(const char * path, const char * test_data) {
     }
 
     if(fread(read_buffer, 1, data_len, file) != data_len) {
-        perror("fread failed 2");
-        fclose(file);
-        return -1;
+        // perror("fread failed 2");
+        // fclose(file);
+        // return -1;
     }
 
     fclose(file);

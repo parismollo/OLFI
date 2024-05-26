@@ -106,3 +106,68 @@ sudo dd if=/dev/loop0 bs=4096 skip=435 count=1 | hexdump -C
 [   61.285087] ouichefs:ouichefs_write: fragmented block_size after writin = 8
 [   61.285512] ouichefs:ouichefs_write: before check if inode->i_blocks == 0 we have: 2 blocks
 [   61.285864] ouichefs:ouichefs_write: inode->i_blocks is 3
+
+
+
+
+-----
+read et write 1.3
+[root@pnl new_version]# ./benchmark 5
+ ------------------------------------------------- 
+| Benchmark test for ext4: performance read/write |
+ ------------------------------------------------- 
+    Average Read Time: 0.000034 seconds
+    Average Write Time: 0.000177 seconds
+
+ -----------------------------------------------------
+| Benchmark test for ouichefs: performance read/write |
+ -----------------------------------------------------
+    Average Read Time: 0.000029 seconds
+    Average Write Time: 0.000288 seconds
+
+ --------------------------- 
+| Check read/write for ext4 |
+ --------------------------- 
+    Check write/read ok
+
+ ------------------------------- 
+| Check read/write for ouichefs |
+ ------------------------------- 
+    Check write/read ok
+
+----
+
+read et write fragmented
+| Check read/write for ouichefs |
+[root@pnl new_version]# ./benchmark 30
+ ------------------------------------------------- 
+| Benchmark test for ext4: performance read/write |
+ ------------------------------------------------- 
+    Average Read Time: 0.000025 seconds
+    Average Write Time: 0.000127 seconds
+
+ -----------------------------------------------------
+| Benchmark test for ouichefs: performance read/write |
+ -----------------------------------------------------
+    Average Read Time: 0.000034 seconds
+    Average Write Time: 0.000298 seconds
+
+ --------------------------- 
+| Check read/write for ext4 |
+ --------------------------- 
+    Check write/read ok
+
+ ------------------------------- 
+| Check read/write for ouichefs |
+ ------------------------------- 
+    Check write/read failed
+
+[root@pnl new_version]# 
+
+
+
+
+write 1.3
+[root@pnl new_version]# ./benchmark_plus 
+Time taken to write 10MB: 0.000867 seconds
+[root@pnl new_version]# 
