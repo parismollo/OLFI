@@ -171,3 +171,20 @@ write 1.3cat
 [root@pnl new_version]# ./benchmark_plus 
 Time taken to write 10MB: 0.000867 seconds
 [root@pnl new_version]# 
+
+
+----
+Used blocks: 3
+Partially filled blocks: 3
+Internal fragmentation: 7284 bytes
+Block 290: 8 bytes
+Block 293: 4093 bytes
+Block 292: 903 bytes
+
+
+
+full = 0;
+
+--xxx------
+-----------
+-------xxxxx

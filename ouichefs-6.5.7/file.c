@@ -316,6 +316,7 @@ static ssize_t ouichefs_read_fragment(struct file *filep, char __user *buf, size
 		return bytes_read;
 	}*/
 	//pr_info("nb_block_read = %d\n", nb_block_read);
+	pr_info("inode->i_blocks = %llu\n", inode->i_blocks);
 	if ( nb_block_read >= inode->i_blocks - 1) {
 		nb_block_read = 0;
 		return bytes_read;
@@ -736,7 +737,7 @@ int apply_contigue(uint32_t current_block, struct super_block *sb)
 
 	struct buffer_head *bh;
 	loff_t empty = -1;
-	loff_t full = 0;
+	loff_t full = -1;
 	loff_t copy_len = 0;
 	int active = 0;
 	
@@ -758,7 +759,7 @@ int apply_contigue(uint32_t current_block, struct super_block *sb)
 			}
 		}else {
 			if(active && copy_len != 0) {
-				memcpy(bh->b_data + full + 1, bh->b_data + empty + 1, copy_len - empty);
+				memcpy(bh->b_data + full  + 1, bh->b_data + empty + 1, copy_len - empty);
 				memset(bh->b_data + empty + 1, 0, copy_len - empty);
 				full += copy_len - (empty + 1);
 				empty = copy_len + 1;
@@ -783,7 +784,6 @@ int apply_contigue(uint32_t current_block, struct super_block *sb)
 
 static long ouichefs_ioctl_defragmentation(struct file *file, unsigned int cmd, unsigned long arg)
 {
-	pr_info("inside ouichefs_ioctl_defragmentation()");
 	struct inode *inode = file->f_inode;
     struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
 	struct super_block *sb = inode->i_sb;
@@ -804,15 +804,13 @@ static long ouichefs_ioctl_defragmentation(struct file *file, unsigned int cmd, 
 			break;
 		}
 		int n = apply_contigue(current_block, sb);
-		pr_info("resultat first contigue: %d\n", n);
 		
 	}
-	// pr_info("after first apply_contigue\n");
+
 	int copy_to = 0;
 	int copy_from = 0;
 	int copied_so_far = 0;
 	for (int i = 0; i < (OUICHEFS_BLOCK_SIZE >> 2); i++) {
-		pr_info("Block index: %d - ", i);
 		uint32_t current_block = file_index->blocks[i];
 		if(current_block == 0) {
 			break;
@@ -820,10 +818,8 @@ static long ouichefs_ioctl_defragmentation(struct file *file, unsigned int cmd, 
 		uint32_t size = get_block_size(current_block);
 		uint32_t size_left;
 		
-		if(size == 0) {
-			pr_info("full");
+		if(size == OUICHEFS_BLOCK_SIZE) {
 			continue;
-
 		}
 
 		bh = sb_bread(sb, get_block_number(current_block));
@@ -836,9 +832,16 @@ static long ouichefs_ioctl_defragmentation(struct file *file, unsigned int cmd, 
 		copy_to = i; 
 		int j = i + 1;
 		for(; j < (OUICHEFS_BLOCK_SIZE >> 2); j++) {
-			pr_info("Searching for data at %d", j);
 			copy_from = j;
 			uint32_t from_block = file_index->blocks[j];
+
+			if (from_block == 0) {
+				break;
+			}
+			if (size == OUICHEFS_BLOCK_SIZE) {
+				break;
+			}
+
 			uint32_t size_from = get_block_size(from_block);
 			size_t bytes_to_copy = min(size_left, size_from);
 			
@@ -852,32 +855,30 @@ static long ouichefs_ioctl_defragmentation(struct file *file, unsigned int cmd, 
 			size = size + bytes_to_copy;
 			current_block = create_block_entry(get_block_number(current_block), size);
 			file_index->blocks[i] = current_block;
-			pr_info("Copied data to %d from %d -", i, j);
+
+			size_from = size_from - bytes_to_copy;
+			from_block = create_block_entry(get_block_number(from_block), size_from);
+			file_index->blocks[j] = from_block;
 			if(bytes_to_copy != size_from) {
-				int x = apply_contigue(from_block, sb);
-				pr_info("resultat second contigue: %d\n", x);
-				pr_info("after second contigue");
-				size_from = size_from - bytes_to_copy;
-				uint32_t from_block = create_block_entry(get_block_number(from_block), size_from);
-				file_index->blocks[j] = from_block;
-				pr_info("Applied contigue");
+				apply_contigue(from_block, sb);
 			}
 
 			mark_buffer_dirty(bh_bis);
 			sync_dirty_buffer(bh_bis);
 			brelse(bh_bis);
 		}
+
 		mark_buffer_dirty(bh);
 		sync_dirty_buffer(bh);
 		brelse(bh);
-		copied_so_far+= size;
+
+		copied_so_far += size;
 		if(copied_so_far >= inode->i_size) {
-			for(int z = j + 1; z < inode->i_blocks - 1; z++) {
+			for(int z = j-1; z < inode->i_blocks-1; z++) {
 				put_block(OUICHEFS_SB(sb), file_index->blocks[z]);
 				file_index->blocks[z] = 0;
-				pr_info("putting blocks back");
 			}
-			inode->i_blocks = j + 1;
+			inode->i_blocks = j;
 			mark_inode_dirty(inode);
 		}
 	}
@@ -891,15 +892,12 @@ static long my_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
     switch (cmd) {
         case OUICHEFS_IOC_GET_INFO:
-			pr_info("info()\n");
             ouichefs_ioctl(file, cmd, arg);
 			break;
         case OUICHEFS_IOC_GET_DEFRAG:
-			pr_info("defrag()\n");
             ouichefs_ioctl_defragmentation(file, cmd, arg);
 			break;
 		default:
-			pr_info("nothing()\n");
 			break;
     }
 	return 0;
