@@ -334,7 +334,7 @@ int verify_write_and_read(char *file_name, char *content) {
 int main() {
     size_t dataSize = 1024 * 10;
     int N = 5;
-    char * program_name = "/../usr/ioctl";
+    char * program_name = "/../usr/ioctl_test";
     printf("------------START BENCHMARK V4------------\n");
     // 1. random write
     printf("(1) create_file_with_random_writes():\n");
@@ -351,15 +351,18 @@ int main() {
     // 5. fragmented write
     printf("(5) test_fragmented_write():\n");
     test_fragmented_write(dataSize, "/mnt/ouichefs/fragmented_file");
-    // // 6. ioctl show blocks
-    // printf("(6) ioctl show blocks():\n");
-    // execute_program(program_name, "/mnt/ouichefs/fragmented_file", 0);
-    // // 7. ioclt defragmented
-    // printf("(7) ioclt defragmented():\n");
-    // execute_program(program_name, "/mnt/ouichefs/fragmented_file", 1);
-    // // 8. ioctl show blocks
-    // printf("(8) ioctl show blocks():\n");
-    // execute_program(program_name, "/mnt/ouichefs/fragmented_file", 0);
+    // 6. ioctl show blocks
+    printf("(6) ioctl show blocks():\n");
+    execute_program(program_name, "/mnt/ouichefs/fragmented_file", 0);
+    // (7) defragmented
+    printf("(7) ioclt defragmented():\n");
+    execute_program(program_name, "/mnt/ouichefs/fragmented_file", 1);
+    // 8. ioctl show blocks
+    printf("(8) ioctl show blocks():\n");
+    execute_program(program_name, "/mnt/ouichefs/fragmented_file", 0);
+    // 8.b lecture defragmented
+    printf("(8.b) lecture defragmented\n");
+    read_file_and_measure_performance("/mnt/ouichefs/fragmented_file", "defragmented_reading");
     // 9. benchmark write sequential
     printf("(9) create_multiple_files_with_sequential_writes():\n");
     create_multiple_files_with_sequential_writes(dataSize, N);
@@ -378,7 +381,7 @@ int main() {
     // 14. bechmark read fragmented
     printf("(14) read_multiple_files_and_measure_performance():\n");
     read_multiple_files_and_measure_performance("/mnt/ouichefs/", "fragmentedwritefile");
-    // 15. test function
+    
     printf("(15) verify_write_and_read():\n");
     verify_write_and_read("/mnt/ouichefs/check_wr_function", "????   -------   XXXXXXX       éé&é&  5455454  MMMM aa&&&!!!!!!");
     printf("------------END BENCHMARK V4------------\n");

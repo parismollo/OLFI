@@ -585,10 +585,12 @@ static int clean_block(struct super_block *sb, uint32_t block_entry)
 static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *buf, size_t len, loff_t *ppos)
 {	
 
+	// Extract the inode from the file pointer.
 	struct inode *inode = filep->f_inode;
 	struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
 	struct super_block *sb = inode->i_sb;
 	struct ouichefs_sb_info *sbi = OUICHEFS_SB(sb);
+	// Declare various variables used throughout the function.
 	struct buffer_head *bh_index;
 	struct ouichefs_file_index_block *index;
 	size_t bytes_to_write; 
@@ -602,6 +604,7 @@ static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *bu
 	if (*ppos + len > OUICHEFS_MAX_FILESIZE)
 		return -ENOSPC;
 
+	// Calculate the number of blocks needed.
 	uint32_t nr_allocs = max(*ppos + (unsigned int) len, inode->i_size) / OUICHEFS_BLOCK_SIZE;
 	if (nr_allocs > inode->i_blocks - 1)
 		nr_allocs -= inode->i_blocks - 1;
@@ -610,6 +613,7 @@ static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *bu
 	if (nr_allocs > sbi->nr_free_blocks)
 		return -ENOSPC;
 
+	// Check if the file is opened in append mode.
 	bool app = (filep->f_flags & O_APPEND) != 0;
 	if (app) {
 		*ppos = inode->i_size;
@@ -619,6 +623,7 @@ static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *bu
 	if (!bh_index)
 		return -EIO;
 	index = (struct ouichefs_file_index_block *)bh_index->b_data;
+	// Calculate the block index and check if the block needs to be allocated.
 	iblock = *ppos / OUICHEFS_BLOCK_SIZE;
 	if (index->blocks[iblock] == 0) {
 		bno = get_free_block(sbi);
@@ -632,15 +637,17 @@ static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *bu
 	} else {
 		bno = index->blocks[iblock];
 	}
+	// Read the block to be written to from disk.
 	struct buffer_head *bh = sb_bread(sb, get_block_number(bno));
 	if (!bh) {
 		brelse(bh_index);
 		return -EIO;
 	}
+	// Calculate the offset within the block and the number of bytes to write.
 	offset = *ppos % OUICHEFS_BLOCK_SIZE;
 	remaining = OUICHEFS_BLOCK_SIZE - offset;
 	bytes_to_write = min(len, remaining);
-
+    // Check if the number of blocks needed exceeds the filesystem's limits.
 	size_t number_of_blocks_needed = ((len + offset) / OUICHEFS_BLOCK_SIZE);
 	if (number_of_blocks_needed + inode->i_blocks > (OUICHEFS_BLOCK_SIZE >> 2) - 1) {
 		brelse(bh);
@@ -648,6 +655,7 @@ static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *bu
 		return -ENOSPC;
 	}
 
+	// Loop to check for contiguous blocks to move if needed.
 	int cmpt = 0;
 	int position_to_copy = -1;
 	for (size_t i = offset ; i < OUICHEFS_BLOCK_SIZE; i++) {
@@ -663,6 +671,7 @@ static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *bu
 			}
 		}
 	}
+	// If a position to copy was found, perform the necessary block allocations and data moves.
 	if (position_to_copy != -1){
 		for (int j = (int)(inode->i_blocks) - 2; j > (int) iblock; j--) {
 			index->blocks[j + number_of_blocks_needed] = index->blocks[j];	
@@ -709,7 +718,7 @@ static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *bu
 		index->blocks[iblock] = bno;
 
 	}
-	
+	 // Copy data from the user buffer to the block
 	bytes_not_write = copy_from_user(bh->b_data + offset, buf, bytes_to_write);
 	if (bytes_not_write) {
 		brelse(bh);
@@ -722,6 +731,7 @@ static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *bu
 	bytes_write = bytes_to_write - bytes_not_write;
 	*ppos += bytes_write;
 
+	// Update the block entry with the new size.
 	uint32_t block_number_fragment = get_block_number(bno);
 	uint32_t block_size_fragment = get_block_size(bno);
 	block_size_fragment = (block_size_fragment + (uint32_t)bytes_write);
@@ -732,6 +742,7 @@ static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *bu
 		inode->i_size = *ppos;
 	}
 	
+	// Update the number of blocks used by the inode.
 	uint32_t nr_blocks_old = inode->i_blocks;
 	if (inode->i_blocks == 1 || inode->i_blocks == 0){
 		inode->i_blocks = inode->i_size / OUICHEFS_BLOCK_SIZE + 2;
@@ -741,6 +752,8 @@ static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *bu
 	inode->i_mtime = inode->i_ctime = current_time(inode);
 	mark_inode_dirty(inode);
 
+
+	// Free any old blocks if the number of blocks used has decreased.
 	if (nr_blocks_old > inode->i_blocks) {
 		for (int i = inode->i_blocks - 1; i < nr_blocks_old - 1; i++) {
 			put_block(OUICHEFS_SB(sb), index->blocks[i]);
@@ -748,6 +761,7 @@ static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *bu
 		}
 	}
 	
+	// Mark the index buffer as dirty and sync it to disk.
 	mark_buffer_dirty(bh_index);
 	sync_dirty_buffer(bh_index);
 	brelse(bh_index);
