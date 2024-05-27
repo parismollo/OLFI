@@ -253,6 +253,8 @@ uint32_t get_block_size(uint32_t entry) {
 * - It reads data from the determined data block into the user-provided buffer, ensuring not to read beyond the file's end.
 * - It updates the position pointer to reflect the number of bytes actually read.
 * - It returns the number of bytes read, indicating a successful operation, or an error code if encountered during the process.*/
+
+/*
 static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, loff_t *ppos)
 {	
 	struct inode *inode = filep->f_inode;
@@ -266,35 +268,35 @@ static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, l
 	sector_t iblock;
 	size_t offset;
 
-	/* Nothing more to read */
+	// Nothing more to read
 	if (*ppos >= inode->i_size) {
 		return bytes_read;
 	}
 
-	/* Read index block from disk */
+	// Read index block from diskouichefs_read
 	bh_index = sb_bread(sb, ci->index_block);
 	if (!bh_index)
 		return -EIO;
 	index = (struct ouichefs_file_index_block *)bh_index->b_data;
 
-	/* Block index calculation*/
+	// Block index calculation
 	iblock = *ppos / OUICHEFS_BLOCK_SIZE;
 	if (index->blocks[iblock] == 0) {
 		brelse(bh_index);
 		return bytes_read;
 	}
 	
-	/* Read block from disk */
+	// Read block from disk
 	struct buffer_head *bh = sb_bread(sb, get_block_number(index->blocks[iblock]));
 	if (!bh) {
 		brelse(bh_index);
 		return -EIO;
 	}
 
-	/* Position in block calculation */
+	// Position in block calculation
 	offset = *ppos % OUICHEFS_BLOCK_SIZE;
 
-	/* Number of bytes to read */
+	// Number of bytes to read
 	size_t tmp = inode->i_size - *ppos;
 	bytes_to_read = min((size_t) OUICHEFS_BLOCK_SIZE, tmp);
 	bytes_not_read = copy_to_user(buf, bh->b_data + offset, bytes_to_read);
@@ -312,6 +314,7 @@ static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, l
 
 	return bytes_read;
 }
+*/
 
 
 /*Read function for a file system implemented in the Linux kernel. 
@@ -398,7 +401,7 @@ static ssize_t ouichefs_read_fragment(struct file *filep, char __user *buf, size
 	bytes_read = bytes_to_read - bytes_not_read;
 	*ppos += bytes_read;
 
-	/* We read the entire block*/
+	// We read the entire block
 	if (bytes_read >= size ) {
 		 nb_block_read++;
 		*ppos += OUICHEFS_BLOCK_SIZE - bytes_read;
@@ -451,6 +454,7 @@ static int clean_block(struct super_block *sb, uint32_t block_entry)
 *9- Return: Returns the number of bytes written or an error code.
 */
 
+/*
 static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t len, loff_t *ppos)
 {
 	struct inode *inode = filep->f_inode;
@@ -470,7 +474,7 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 	if (*ppos + len > OUICHEFS_MAX_FILESIZE)
 		return -ENOSPC;
 	
-	/* Check if the write can be completed (enough space?) */
+	// Check if the write can be completed (enough space?)
 	uint32_t nr_allocs = max(*ppos + (unsigned int) len, inode->i_size) / OUICHEFS_BLOCK_SIZE;
 	if (nr_allocs > inode->i_blocks - 1)
 		nr_allocs -= inode->i_blocks - 1;
@@ -480,19 +484,19 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 		return -ENOSPC;
 	
 
-	/* If in append mode, updates the write position to the end of the file. */
+	// If in append mode, updates the write position to the end of the file.
 	bool app = (filep->f_flags & O_APPEND) != 0;
 	if (app) {
 		*ppos = inode->i_size;
 	}
 
-	/* Read index block from disk */
+	// Read index block from disk
 	bh_index = sb_bread(sb, ci->index_block);
 	if (!bh_index)
 		return -EIO;
 	index = (struct ouichefs_file_index_block *)bh_index->b_data;
 
-	/* Determines the data block corresponding to the current write position */
+	// Determines the data block corresponding to the current write position
 	iblock = *ppos / OUICHEFS_BLOCK_SIZE;
 	if (index->blocks[iblock] == 0) {
 		bno = get_free_block(sbi);
@@ -509,7 +513,7 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 		bno = index->blocks[iblock];
 	}
 
-	/* Reads the data block from disk into memory */
+	// Reads the data block from disk into memory
 	struct buffer_head *bh = sb_bread(sb, get_block_number(bno));
 	if (!bh) {
 		brelse(bh_index);
@@ -518,10 +522,10 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 
 	offset = *ppos % OUICHEFS_BLOCK_SIZE;
 	remaining = OUICHEFS_BLOCK_SIZE - offset;
-	/* Number of bytes to write */
+	// Number of bytes to write
 	bytes_to_write = min(len, remaining);
 
-	/* Copies data from the user buffer to the data block */
+	// Copies data from the user buffer to the data block
 	bytes_not_write = copy_from_user(bh->b_data + offset, buf, bytes_to_write);
 	if (bytes_not_write) {
 		brelse(bh);
@@ -542,7 +546,7 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 
 	brelse(bh);
 
-	/* Updates block metadata and file size */
+	// Updates block metadata and file size
 	if (*ppos > inode->i_size)
 		inode->i_size = *ppos;
 
@@ -552,7 +556,7 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 	inode->i_mtime = inode->i_ctime = current_time(inode);
 	mark_inode_dirty(inode);
 
-	/* If file is smaller than before, free unused blocks */
+	// If file is smaller than before, free unused blocks
 	if (nr_blocks_old > inode->i_blocks) {
 		for (int i = inode->i_blocks - 1; i < nr_blocks_old - 1; i++) {
 			put_block(OUICHEFS_SB(sb), index->blocks[i]);
@@ -564,7 +568,7 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 	sync_dirty_buffer(bh_index);
 	brelse(bh_index);
 	return bytes_write;
-}
+}*/
 
 
 /*
@@ -581,6 +585,7 @@ static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t
 * 8- Cleanup: Once the write operation is completed, it releases any buffers or resources used during the process.
 * 9- Return: Finally, it returns the number of bytes successfully written to the file, or an error code if any issues occurred during the process.
 */
+
 
 static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *buf, size_t len, loff_t *ppos)
 {	
