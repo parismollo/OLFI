@@ -1,0 +1,1632 @@
+WARNING: Missing commit description - Add an appropriate one
+
+WARNING: Missing or malformed SPDX-License-Identifier tag in line 1
+#5: FILE: file.c:1:
++
+
+WARNING: Misplaced SPDX-License-Identifier tag - use line 1 instead
+#8: FILE: file.c:4:
++// SPDX-License-Identifier: GPL-2.0
+
+ERROR: open brace '{' following function definitions go on the next line
+#267: FILE: file.c:197:
++static int ouichefs_open(struct inode *inode, struct file *file) {
+
+ERROR: trailing whitespace
+#295: FILE: file.c:225:
++^I$
+
+WARNING: Block comments should align the * on each line
+#301: FILE: file.c:231:
++/*Create the block entry based on the 12 bits of the block size
++* and the 20 bits of the block number
+
+ERROR: open brace '{' following function definitions go on the next line
+#303: FILE: file.c:233:
++uint32_t create_block_entry(uint32_t block_number, uint32_t block_size) {
+
+WARNING: please, no spaces at the start of a line
+#304: FILE: file.c:234:
++    return (block_size << 20) | (block_number & BLOCK_NUMBER_MASK);$
+
+ERROR: open brace '{' following function definitions go on the next line
+#308: FILE: file.c:238:
++uint32_t get_block_number(uint32_t entry) {
+
+WARNING: please, no spaces at the start of a line
+#309: FILE: file.c:239:
++    return (entry & BLOCK_NUMBER_MASK);$
+
+ERROR: open brace '{' following function definitions go on the next line
+#313: FILE: file.c:243:
++uint32_t get_block_size(uint32_t entry) {
+
+WARNING: please, no spaces at the start of a line
+#314: FILE: file.c:244:
++    return (entry & BLOCK_SIZE_MASK) >> 20;$
+
+WARNING: line length of 108 exceeds 100 columns
+#318: FILE: file.c:248:
++/*In summarry this function enables users to retrieve data from a file by copying it into a provided buffer.
+
+WARNING: Block comments should align the * on each line
+#319: FILE: file.c:249:
++/*In summarry this function enables users to retrieve data from a file by copying it into a provided buffer.
++* Here's a concisely its functionality:
+
+WARNING: line length of 123 exceeds 100 columns
+#323: FILE: file.c:253:
++* - It reads data from the determined data block into the user-provided buffer, ensuring not to read beyond the file's end.
+
+WARNING: line length of 129 exceeds 100 columns
+#325: FILE: file.c:255:
++* - It returns the number of bytes read, indicating a successful operation, or an error code if encountered during the process.*/
+
+WARNING: Block comments use a trailing */ on a separate line
+#325: FILE: file.c:255:
++* - It returns the number of bytes read, indicating a successful operation, or an error code if encountered during the process.*/
+
+WARNING: Block comments use * on subsequent lines
+#327: FILE: file.c:257:
++/*
++/*
+
+WARNING: Block comments use * on subsequent lines
+#328: FILE: file.c:258:
++/*
++static ssize_t ouichefs_read(struct file *filep, char __user *buf, size_t len, loff_t *ppos)
+
+ERROR: trailing whitespace
+#329: FILE: file.c:259:
++{^I$
+
+ERROR: trailing whitespace
+#375: FILE: file.c:305:
++^I$
+
+ERROR: trailing whitespace
+#384: FILE: file.c:314:
++/*Read function for a file system implemented in the Linux kernel. $
+
+ERROR: trailing whitespace
+#385: FILE: file.c:315:
++* It is responsible for reading a fragment of data from a file, with additional $
+
+WARNING: Block comments should align the * on each line
+#385: FILE: file.c:315:
++/*Read function for a file system implemented in the Linux kernel. 
++* It is responsible for reading a fragment of data from a file, with additional 
+
+ERROR: do not initialise statics to 0
+#388: FILE: file.c:318:
++static int nb_block_read = 0; // Global counter to track the number of blocks read
+
+WARNING: line length of 101 exceeds 100 columns
+#389: FILE: file.c:319:
++static ssize_t ouichefs_read_fragment(struct file *filep, char __user *buf, size_t len, loff_t *ppos)
+
+ERROR: trailing whitespace
+#390: FILE: file.c:320:
++{^I$
+
+WARNING: Block comments use * on subsequent lines
+#407: FILE: file.c:337:
++	/*if (*ppos >= inode->i_size) {
++		return bytes_read;
+
+WARNING: Block comments use a trailing */ on a separate line
+#408: FILE: file.c:338:
++	}*/
+
+ERROR: space prohibited after that open parenthesis '('
+#412: FILE: file.c:342:
++	if ( nb_block_read >= inode->i_blocks - 1) {
+
+WARNING: line length of 104 exceeds 100 columns
+#421: FILE: file.c:351:
++	index = (struct ouichefs_file_index_block *)bh_index->b_data; // Retrieves data from index block
+
+WARNING: Missing a blank line after declarations
+#433: FILE: file.c:363:
++	struct buffer_head *bh = sb_bread(sb, get_block_number(bno));
++	if (!bh) {
+
+ERROR: trailing whitespace
+#437: FILE: file.c:367:
++^I$
+
+ERROR: trailing whitespace
+#444: FILE: file.c:374:
++^Iif (size != 0) { $
+
+ERROR: trailing whitespace
+#446: FILE: file.c:376:
++^I^I^Iif (bh->b_data[i] != 0){ $
+
+ERROR: space required before the open brace '{'
+#446: FILE: file.c:376:
++			if (bh->b_data[i] != 0){ 
+
+ERROR: space required before the open brace '{'
+#447: FILE: file.c:377:
++				if (start == -1){
+
+WARNING: braces {} are not necessary for single statement blocks
+#447: FILE: file.c:377:
++				if (start == -1){
++					start = i; // Start of non-zero data
++				}
+
+ERROR: space required before the open brace '{'
+#451: FILE: file.c:381:
++			}else{
+
+ERROR: space required after that close brace '}'
+#451: FILE: file.c:381:
++			}else{
+
+ERROR: space required before the open brace '{'
+#452: FILE: file.c:382:
++				if (start != -1){
+
+WARNING: braces {} are not necessary for single statement blocks
+#452: FILE: file.c:382:
++				if (start != -1){
++					break; // End of non-zero data
++				}
+
+ERROR: space prohibited before that close parenthesis ')'
+#473: FILE: file.c:403:
++	if (bytes_read >= size ) {
+
+ERROR: trailing whitespace
+#477: FILE: file.c:407:
++^I$
+
+ERROR: trailing whitespace
+#494: FILE: file.c:424:
++int clean_block(struct super_block *sb, uint32_t block_entry) $
+
+WARNING: Missing a blank line after declarations
+#497: FILE: file.c:427:
++	struct buffer_head *bh = sb_bread(sb, get_block_number(block_entry));
++	if (!bh) {
+
+WARNING: Block comments should align the * on each line
+#511: FILE: file.c:441:
++/*
++*This function does the basic write operation without optization.
+
+WARNING: Block comments use * on subsequent lines
+#523: FILE: file.c:453:
++/*
++
+
+WARNING: Block comments use * on subsequent lines
+#525: FILE: file.c:455:
++/*
++static ssize_t ouichefs_write(struct file *filep, const char __user *buf, size_t len, loff_t *ppos)
+
+WARNING: Block comments use a trailing */ on a separate line
+#639: FILE: file.c:555:
++}*/
+
+ERROR: trailing whitespace
+#643: FILE: file.c:559:
++// int declencher_decalage(loff_t offset, int len, int idx_current_block,  int target_block, struct super_block *sb, struct ouichefs_file_index_block *index) $
+
+WARNING: line length of 158 exceeds 100 columns
+#643: FILE: file.c:559:
++// int declencher_decalage(loff_t offset, int len, int idx_current_block,  int target_block, struct super_block *sb, struct ouichefs_file_index_block *index) 
+
+WARNING: please, no space before tabs
+#645: FILE: file.c:561:
++// ^Iint block_preced;$
+
+WARNING: please, no space before tabs
+#646: FILE: file.c:562:
++// ^Istruct buffer_head *bh_preced;$
+
+WARNING: please, no space before tabs
+#647: FILE: file.c:563:
++// ^Iuint32_t block_size_preced;$
+
+WARNING: please, no space before tabs
+#649: FILE: file.c:565:
++// ^Ifor(int i = idx_current_block; i >= target_block; i--) {$
+
+WARNING: please, no space before tabs
+#650: FILE: file.c:566:
++// ^I^Iint block = index->blocks[i];$
+
+WARNING: please, no space before tabs
+#651: FILE: file.c:567:
++// ^I^Istruct buffer_head *bh = sb_bread(sb, get_block_number(block));$
+
+WARNING: please, no space before tabs
+#652: FILE: file.c:568:
++// ^I^Iuint32_t block_size = get_block_size(bno);$
+
+WARNING: please, no space before tabs
+#653: FILE: file.c:569:
++// ^I^Iblock_preced = i + 1;$
+
+WARNING: please, no space before tabs
+#654: FILE: file.c:570:
++// ^I^I*bh_preced = sb_bread(sb, get_block_number(block_preced));$
+
+WARNING: please, no space before tabs
+#655: FILE: file.c:571:
++// ^I^Iblock_size_preced = get_block_size(block_preced);$
+
+WARNING: please, no space before tabs
+#656: FILE: file.c:572:
++// ^I^Iif(block_size != 0 || block_size != OUICHEFS_BLOCK_SIZE){$
+
+WARNING: please, no space before tabs
+#657: FILE: file.c:573:
++// ^I^I^Imemcpy(bh->b_data + block_size + len, bh->b_data, block_size);$
+
+WARNING: please, no space before tabs
+#658: FILE: file.c:574:
++// ^I^I}else if (i == target_block) {$
+
+WARNING: please, no space before tabs
+#659: FILE: file.c:575:
++// ^I^I^Imemcpy(bh_preced->b_data, bh->data + offset, len);$
+
+WARNING: please, no space before tabs
+#660: FILE: file.c:576:
++// ^I^I^Ireturn 0;$
+
+WARNING: please, no space before tabs
+#661: FILE: file.c:577:
++// ^I^I}else {$
+
+WARNING: please, no space before tabs
+#662: FILE: file.c:578:
++// ^I^I^Imemcpy(bh_preced->b_data, bh->data + block_size_preced - len, len);$
+
+WARNING: please, no space before tabs
+#663: FILE: file.c:579:
++// ^I^I^Imemcpy(bh->data + block_size_preced - len, bh->data, len);$
+
+WARNING: please, no space before tabs
+#664: FILE: file.c:580:
++// ^I^I}$
+
+WARNING: please, no space before tabs
+#665: FILE: file.c:581:
++// ^I}$
+
+WARNING: line length of 107 exceeds 100 columns
+#669: FILE: file.c:585:
++// static ssize_t ouichefs_write_plus(struct file *filep, const char __user *buf, size_t len, loff_t *ppos)
+
+ERROR: trailing whitespace
+#670: FILE: file.c:586:
++// {^I$
+
+WARNING: please, no space before tabs
+#671: FILE: file.c:587:
++// ^Istruct inode *inode = filep->f_inode;$
+
+WARNING: please, no space before tabs
+#672: FILE: file.c:588:
++// ^Istruct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);$
+
+WARNING: please, no space before tabs
+#673: FILE: file.c:589:
++// ^Istruct super_block *sb = inode->i_sb;$
+
+WARNING: please, no space before tabs
+#674: FILE: file.c:590:
++// ^Istruct ouichefs_sb_info *sbi = OUICHEFS_SB(sb);$
+
+WARNING: please, no space before tabs
+#675: FILE: file.c:591:
++// ^Istruct buffer_head *bh_index;$
+
+WARNING: please, no space before tabs
+#676: FILE: file.c:592:
++// ^Istruct ouichefs_file_index_block *index;$
+
+ERROR: trailing whitespace
+#677: FILE: file.c:593:
++// ^Isize_t bytes_to_write; $
+
+WARNING: please, no space before tabs
+#677: FILE: file.c:593:
++// ^Isize_t bytes_to_write; $
+
+WARNING: please, no space before tabs
+#678: FILE: file.c:594:
++// ^Isize_t bytes_write = 0;$
+
+WARNING: please, no space before tabs
+#679: FILE: file.c:595:
++// ^Isize_t bytes_not_write;$
+
+WARNING: please, no space before tabs
+#680: FILE: file.c:596:
++// ^Isector_t iblock;$
+
+WARNING: please, no space before tabs
+#681: FILE: file.c:597:
++// ^Isize_t offset;$
+
+WARNING: please, no space before tabs
+#682: FILE: file.c:598:
++// ^Isize_t remaining;$
+
+WARNING: please, no space before tabs
+#683: FILE: file.c:599:
++// ^Iint bno;$
+
+ERROR: trailing whitespace
+#684: FILE: file.c:600:
++^I$
+
+WARNING: please, no space before tabs
+#685: FILE: file.c:601:
++// ^Iif (*ppos + len > OUICHEFS_MAX_FILESIZE)$
+
+WARNING: please, no space before tabs
+#686: FILE: file.c:602:
++// ^I^Ireturn -ENOSPC;$
+
+WARNING: please, no space before tabs
+#688: FILE: file.c:604:
++// ^Iuint32_t nr_allocs = max(*ppos + (unsigned int) len, inode->i_size) / OUICHEFS_BLOCK_SIZE;$
+
+WARNING: please, no space before tabs
+#689: FILE: file.c:605:
++// ^Iif (nr_allocs > inode->i_blocks - 1)$
+
+WARNING: please, no space before tabs
+#690: FILE: file.c:606:
++// ^I^Inr_allocs -= inode->i_blocks - 1;$
+
+WARNING: please, no space before tabs
+#691: FILE: file.c:607:
++// ^Ielse$
+
+WARNING: please, no space before tabs
+#692: FILE: file.c:608:
++// ^I^Inr_allocs = 0;$
+
+WARNING: please, no space before tabs
+#693: FILE: file.c:609:
++// ^Iif (nr_allocs > sbi->nr_free_blocks)$
+
+WARNING: please, no space before tabs
+#694: FILE: file.c:610:
++// ^I^Ireturn -ENOSPC;$
+
+WARNING: please, no space before tabs
+#696: FILE: file.c:612:
++// ^Ibool app = (filep->f_flags & O_APPEND) != 0;$
+
+WARNING: please, no space before tabs
+#697: FILE: file.c:613:
++// ^Iif (app) {$
+
+WARNING: please, no space before tabs
+#698: FILE: file.c:614:
++// ^I^I*ppos = inode->i_size;$
+
+WARNING: please, no space before tabs
+#699: FILE: file.c:615:
++// ^I}$
+
+WARNING: please, no space before tabs
+#701: FILE: file.c:617:
++// ^Ibh_index = sb_bread(sb, ci->index_block);$
+
+WARNING: please, no space before tabs
+#702: FILE: file.c:618:
++// ^Iif (!bh_index)$
+
+WARNING: please, no space before tabs
+#703: FILE: file.c:619:
++// ^I^Ireturn -EIO;$
+
+WARNING: please, no space before tabs
+#704: FILE: file.c:620:
++// ^Iindex = (struct ouichefs_file_index_block *)bh_index->b_data;$
+
+WARNING: please, no space before tabs
+#706: FILE: file.c:622:
++// ^Iiblock = *ppos / OUICHEFS_BLOCK_SIZE;$
+
+WARNING: please, no space before tabs
+#707: FILE: file.c:623:
++// ^Iif (index->blocks[iblock] == 0) {$
+
+WARNING: please, no space before tabs
+#708: FILE: file.c:624:
++// ^I^Ibno = get_free_block(sbi);$
+
+WARNING: please, no space before tabs
+#709: FILE: file.c:625:
++// ^I^Iif (!bno) {$
+
+WARNING: please, no space before tabs
+#710: FILE: file.c:626:
++// ^I^I^Ibrelse(bh_index);$
+
+WARNING: please, no space before tabs
+#711: FILE: file.c:627:
++// ^I^I^Ireturn -ENOSPC;$
+
+WARNING: please, no space before tabs
+#712: FILE: file.c:628:
++// ^I^I}$
+
+WARNING: please, no space before tabs
+#713: FILE: file.c:629:
++// ^I^Ibno = create_block_entry((uint32_t)bno, (uint32_t)0);$
+
+WARNING: please, no space before tabs
+#714: FILE: file.c:630:
++// ^I^Iclean_block(sb, bno);$
+
+WARNING: please, no space before tabs
+#715: FILE: file.c:631:
++// ^I^Iindex->blocks[iblock] = bno;$
+
+WARNING: please, no space before tabs
+#716: FILE: file.c:632:
++// ^I^Imark_buffer_dirty(bh_index);$
+
+WARNING: please, no space before tabs
+#717: FILE: file.c:633:
++// ^I^Isync_dirty_buffer(bh_index);$
+
+WARNING: please, no space before tabs
+#718: FILE: file.c:634:
++// ^I} else {$
+
+WARNING: please, no space before tabs
+#719: FILE: file.c:635:
++// ^I^Ibno = index->blocks[iblock];$
+
+WARNING: please, no space before tabs
+#720: FILE: file.c:636:
++// ^I^I// 1. not sure we need to do this (or if we can or should)$
+
+WARNING: please, no space before tabs
+#721: FILE: file.c:637:
++// ^I^Iapply_contigue(get_block_number(bno),sb);$
+
+WARNING: please, no space before tabs
+#722: FILE: file.c:638:
++// ^I}$
+
+ERROR: trailing whitespace
+#723: FILE: file.c:639:
++^I$
+
+WARNING: please, no space before tabs
+#724: FILE: file.c:640:
++// ^Istruct buffer_head *bh = sb_bread(sb, get_block_number(bno));$
+
+WARNING: please, no space before tabs
+#725: FILE: file.c:641:
++// ^Iif (!bh) {$
+
+WARNING: please, no space before tabs
+#726: FILE: file.c:642:
++// ^I^Ibrelse(bh_index);$
+
+WARNING: please, no space before tabs
+#727: FILE: file.c:643:
++// ^I^Ireturn -EIO;$
+
+WARNING: please, no space before tabs
+#728: FILE: file.c:644:
++// ^I}$
+
+WARNING: please, no space before tabs
+#730: FILE: file.c:646:
++// ^Ioffset = *ppos % OUICHEFS_BLOCK_SIZE;$
+
+WARNING: please, no space before tabs
+#731: FILE: file.c:647:
++// ^Iremaining = OUICHEFS_BLOCK_SIZE - offset;$
+
+WARNING: please, no space before tabs
+#732: FILE: file.c:648:
++// ^Ibytes_to_write = min(len, remaining);$
+
+WARNING: please, no space before tabs
+#733: FILE: file.c:649:
++// ^Iif (*(bh->b_data + offset) != 0) {$
+
+WARNING: please, no space before tabs
+#734: FILE: file.c:650:
++// ^I^Iif (remaining >= len) {$
+
+ERROR: trailing whitespace
+#735: FILE: file.c:651:
++// ^I^I^Imemcpy(bh->b_data + offset + len, bh->b_data, get_block_size(bno)); $
+
+WARNING: please, no space before tabs
+#735: FILE: file.c:651:
++// ^I^I^Imemcpy(bh->b_data + offset + len, bh->b_data, get_block_size(bno)); $
+
+WARNING: please, no space before tabs
+#736: FILE: file.c:652:
++// ^I^I} else {$
+
+WARNING: please, no space before tabs
+#737: FILE: file.c:653:
++// ^I^I^Iint current = inode->i_size - 1;$
+
+WARNING: please, no space before tabs
+#738: FILE: file.c:654:
++// ^I^I^Ifor (; current == iblock; current--) {$
+
+WARNING: please, no space before tabs
+#739: FILE: file.c:655:
++// ^I^I^I^Iuint32_t current_block = index->blocks[current];$
+
+WARNING: please, no space before tabs
+#740: FILE: file.c:656:
++// ^I^I^I^Iuint32_t current_block_size = get_block_size(current_block);$
+
+WARNING: please, no space before tabs
+#741: FILE: file.c:657:
++// ^I^I^I^Iif (OUICHEFS_BLOCK_SIZE - current_block_size >= len) {$
+
+WARNING: line length of 101 exceeds 100 columns
+#742: FILE: file.c:658:
++// 					declancher_decalage(offset, len, current, iblock, sb, index);
+
+WARNING: please, no space before tabs
+#742: FILE: file.c:658:
++// ^I^I^I^I^Ideclancher_decalage(offset, len, current, iblock, sb, index);$
+
+WARNING: please, no space before tabs
+#743: FILE: file.c:659:
++// ^I^I^I^I}else {$
+
+WARNING: please, no space before tabs
+#744: FILE: file.c:660:
++// ^I^I^I^I^Iif(inode->i_blocks - 1 == (OUICHEFS_MAX_FILESIZE >> 2)) {$
+
+WARNING: please, no space before tabs
+#745: FILE: file.c:661:
++// ^I^I^I^I^I^I// pass du espace pour ecriture (echec)$
+
+WARNING: please, no space before tabs
+#746: FILE: file.c:662:
++// ^I^I^I^I^I} else {$
+
+WARNING: please, no space before tabs
+#747: FILE: file.c:663:
++// ^I^I^I^I^I^I// allouer nouveau bloc$
+
+WARNING: please, no space before tabs
+#748: FILE: file.c:664:
++// ^I^I^I^I^I^Iint bno_bis = get_free_block(sbi);$
+
+WARNING: please, no space before tabs
+#749: FILE: file.c:665:
++// ^I^I^I^I^I^Iif (!bno_bis) {$
+
+WARNING: please, no space before tabs
+#750: FILE: file.c:666:
++// ^I^I^I^I^I^I^Ibrelse(bh);$
+
+WARNING: please, no space before tabs
+#751: FILE: file.c:667:
++// ^I^I^I^I^I^I^Ibrelse(bh_index);$
+
+WARNING: please, no space before tabs
+#752: FILE: file.c:668:
++// ^I^I^I^I^I^I^Ireturn -ENOSPC;$
+
+WARNING: please, no space before tabs
+#753: FILE: file.c:669:
++// ^I^I^I^I^I^I}$
+
+WARNING: line length of 109 exceeds 100 columns
+#754: FILE: file.c:670:
++// 						bno_bis = create_block_entry((uint32_t)bno_bis, (uint32_t)0);
+
+WARNING: please, no space before tabs
+#754: FILE: file.c:670:
++// ^I^I^I^I^I^Ibno_bis = create_block_entry((uint32_t)bno_bis, (uint32_t)0);$
+
+WARNING: please, no space before tabs
+#755: FILE: file.c:671:
++// ^I^I^I^I^I^Iclean_block(sb, bno_bis);$
+
+WARNING: please, no space before tabs
+#756: FILE: file.c:672:
++// ^I^I^I^I^I^Iindex->blocks[inode->i_size - 1] = bno_bis;$
+
+WARNING: line length of 112 exceeds 100 columns
+#757: FILE: file.c:673:
++// 						declancher_decalage(offset, len, i_size - 1, iblock, sb, index);
+
+WARNING: please, no space before tabs
+#757: FILE: file.c:673:
++// ^I^I^I^I^I^Ideclancher_decalage(offset, len, i_size - 1, iblock, sb, index);$
+
+WARNING: please, no space before tabs
+#758: FILE: file.c:674:
++// ^I^I^I^I^I}$
+
+WARNING: please, no space before tabs
+#759: FILE: file.c:675:
++// ^I^I^I^I}$
+
+WARNING: please, no space before tabs
+#760: FILE: file.c:676:
++// ^I^I^I}$
+
+WARNING: please, no space before tabs
+#761: FILE: file.c:677:
++// ^I^I}$
+
+WARNING: please, no space before tabs
+#762: FILE: file.c:678:
++// ^I}$
+
+WARNING: please, no space before tabs
+#763: FILE: file.c:679:
++// ^Ibytes_not_write = copy_from_user(bh->b_data + offset, buf, bytes_to_write);$
+
+WARNING: please, no space before tabs
+#764: FILE: file.c:680:
++// ^Iif (bytes_not_write) {$
+
+WARNING: please, no space before tabs
+#765: FILE: file.c:681:
++// ^I^Ibrelse(bh);$
+
+WARNING: please, no space before tabs
+#766: FILE: file.c:682:
++// ^I^Ibrelse(bh_index);$
+
+WARNING: please, no space before tabs
+#767: FILE: file.c:683:
++// ^I^Ireturn -EFAULT;$
+
+WARNING: please, no space before tabs
+#768: FILE: file.c:684:
++// ^I}$
+
+WARNING: please, no space before tabs
+#769: FILE: file.c:685:
++// ^Imark_buffer_dirty(bh);$
+
+WARNING: please, no space before tabs
+#770: FILE: file.c:686:
++// ^Isync_dirty_buffer(bh);$
+
+WARNING: please, no space before tabs
+#772: FILE: file.c:688:
++// ^Ibytes_write = bytes_to_write - bytes_not_write;$
+
+WARNING: please, no space before tabs
+#773: FILE: file.c:689:
++// ^I*ppos += bytes_write;$
+
+WARNING: please, no space before tabs
+#775: FILE: file.c:691:
++// ^Iuint32_t block_number = get_block_number(bno);$
+
+WARNING: please, no space before tabs
+#776: FILE: file.c:692:
++// ^Iuint32_t block_size = get_block_size(bno);$
+
+WARNING: please, no space before tabs
+#777: FILE: file.c:693:
++// ^Iblock_size = (block_size + (uint32_t)bytes_write);$
+
+WARNING: please, no space before tabs
+#778: FILE: file.c:694:
++// ^Ibno = create_block_entry(block_number, block_size);$
+
+WARNING: please, no space before tabs
+#779: FILE: file.c:695:
++// ^Iindex->blocks[iblock] = bno;$
+
+WARNING: please, no space before tabs
+#781: FILE: file.c:697:
++// ^Ibrelse(bh);$
+
+WARNING: please, no space before tabs
+#783: FILE: file.c:699:
++// ^Iif (*ppos > inode->i_size)$
+
+WARNING: please, no space before tabs
+#784: FILE: file.c:700:
++// ^I^Iinode->i_size = *ppos;$
+
+WARNING: please, no space before tabs
+#786: FILE: file.c:702:
++// ^Iuint32_t nr_blocks_old = inode->i_blocks;$
+
+WARNING: please, no space before tabs
+#788: FILE: file.c:704:
++// ^Iinode->i_blocks = inode->i_size / OUICHEFS_BLOCK_SIZE + 2;$
+
+WARNING: please, no space before tabs
+#789: FILE: file.c:705:
++// ^Iinode->i_mtime = inode->i_ctime = current_time(inode);$
+
+WARNING: please, no space before tabs
+#790: FILE: file.c:706:
++// ^Imark_inode_dirty(inode);$
+
+WARNING: please, no space before tabs
+#792: FILE: file.c:708:
++// ^Iif (nr_blocks_old > inode->i_blocks) {$
+
+WARNING: please, no space before tabs
+#793: FILE: file.c:709:
++// ^I^Ifor (int i = inode->i_blocks - 1; i < nr_blocks_old - 1; i++) {$
+
+WARNING: please, no space before tabs
+#794: FILE: file.c:710:
++// ^I^I^Iput_block(OUICHEFS_SB(sb), index->blocks[i]);$
+
+WARNING: please, no space before tabs
+#795: FILE: file.c:711:
++// ^I^I^Iindex->blocks[i] = 0;$
+
+WARNING: please, no space before tabs
+#796: FILE: file.c:712:
++// ^I^I}$
+
+WARNING: please, no space before tabs
+#797: FILE: file.c:713:
++// ^I}$
+
+WARNING: please, no space before tabs
+#798: FILE: file.c:714:
++// ^Imark_buffer_dirty(bh_index);$
+
+WARNING: please, no space before tabs
+#799: FILE: file.c:715:
++// ^Isync_dirty_buffer(bh_index);$
+
+WARNING: please, no space before tabs
+#800: FILE: file.c:716:
++// ^Ibrelse(bh_index);$
+
+WARNING: please, no space before tabs
+#802: FILE: file.c:718:
++// ^Ireturn bytes_write;$
+
+WARNING: line length of 107 exceeds 100 columns
+#807: FILE: file.c:723:
++* This function does the write operation by inserting blocs from position where one wants to write content.
+
+WARNING: Block comments should align the * on each line
+#807: FILE: file.c:723:
++/*
++* This function does the write operation by inserting blocs from position where one wants to write content.
+
+WARNING: line length of 110 exceeds 100 columns
+#809: FILE: file.c:725:
++* This function extends the behavior of writing data to a file in the "ouichefs" filesystem. Here's a summary:
+
+WARNING: line length of 147 exceeds 100 columns
+#810: FILE: file.c:726:
++* 1- Space Check: It ensures that there's enough space in the filesystem to accommodate the write operation. If not, it stops and returns an error.
+
+WARNING: line length of 113 exceeds 100 columns
+#811: FILE: file.c:727:
++* 2- Position Update: If the file is opened in append mode, it updates the write position to the end of the file.
+
+WARNING: line length of 115 exceeds 100 columns
+#812: FILE: file.c:728:
++* 3- Index Block Read: It reads the index block of the file to locate the data blocks that hold the file's content.
+
+WARNING: line length of 134 exceeds 100 columns
+#813: FILE: file.c:729:
++* 4- Data Block Location: Based on the current write position, it identifies the specific data block where the data should be written.
+
+WARNING: line length of 202 exceeds 100 columns
+#814: FILE: file.c:730:
++* 5- Fragmentation Handling: If the data to be written would cause fragmentation (i.e., if there isn't enough contiguous space in the current block), it rearranges the blocks to make space for the data.
+
+WARNING: line length of 156 exceeds 100 columns
+#815: FILE: file.c:731:
++* 6- Data Writing: It copies the data from the user-provided buffer into the data block buffer. If fragmentation occurs, it handles the copying accordingly.
+
+WARNING: line length of 151 exceeds 100 columns
+#816: FILE: file.c:732:
++* 7- Metadata Update: After writing the data, it updates the metadata associated with the block to reflect the new size and other relevant information.
+
+WARNING: line length of 114 exceeds 100 columns
+#817: FILE: file.c:733:
++* 8- Cleanup: Once the write operation is completed, it releases any buffers or resources used during the process.
+
+WARNING: line length of 146 exceeds 100 columns
+#818: FILE: file.c:734:
++* 9- Return: Finally, it returns the number of bytes successfully written to the file, or an error code if any issues occurred during the process.
+
+WARNING: line length of 108 exceeds 100 columns
+#820: FILE: file.c:736:
++static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *buf, size_t len, loff_t *ppos)
+
+ERROR: trailing whitespace
+#821: FILE: file.c:737:
++{^I$
+
+ERROR: trailing whitespace
+#829: FILE: file.c:745:
++^Isize_t bytes_to_write; $
+
+ERROR: trailing whitespace
+#836: FILE: file.c:752:
++^I$
+
+WARNING: Missing a blank line after declarations
+#841: FILE: file.c:757:
++	uint32_t nr_allocs = max(*ppos + (unsigned int) len, inode->i_size) / OUICHEFS_BLOCK_SIZE;
++	if (nr_allocs > inode->i_blocks - 1)
+
+WARNING: Missing a blank line after declarations
+#849: FILE: file.c:765:
++	bool app = (filep->f_flags & O_APPEND) != 0;
++	if (app) {
+
+WARNING: braces {} are not necessary for single statement blocks
+#849: FILE: file.c:765:
++	if (app) {
++		*ppos = inode->i_size;
++	}
+
+ERROR: trailing whitespace
+#863: FILE: file.c:779:
++^I^I}^I^I$
+
+WARNING: Missing a blank line after declarations
+#871: FILE: file.c:787:
++	struct buffer_head *bh = sb_bread(sb, get_block_number(bno));
++	if (!bh) {
+
+WARNING: Missing a blank line after declarations
+#880: FILE: file.c:796:
++	size_t number_of_blocks_needed = ((len + offset) / OUICHEFS_BLOCK_SIZE);
++	if (number_of_blocks_needed + inode->i_blocks > (OUICHEFS_BLOCK_SIZE >> 2) - 1) {
+
+WARNING: Missing a blank line after declarations
+#888: FILE: file.c:804:
++	int position_to_copy = -1;
++	for (size_t i = offset ; i < OUICHEFS_BLOCK_SIZE; i++) {
+
+ERROR: space required before the open brace '{'
+#889: FILE: file.c:805:
++		if (bh->b_data[i] != 0){
+
+ERROR: space required before the open brace '{'
+#890: FILE: file.c:806:
++			if (position_to_copy == -1){
+
+ERROR: space required before the open brace '{'
+#895: FILE: file.c:811:
++		}else{
+
+ERROR: space required after that close brace '}'
+#895: FILE: file.c:811:
++		}else{
+
+ERROR: space required before the open brace '{'
+#896: FILE: file.c:812:
++			if (position_to_copy != -1){
+
+WARNING: braces {} are not necessary for single statement blocks
+#896: FILE: file.c:812:
++			if (position_to_copy != -1){
++				break;
++			}
+
+ERROR: space required before the open brace '{'
+#901: FILE: file.c:817:
++	if (position_to_copy != -1){
+
+WARNING: braces {} are not necessary for single statement blocks
+#902: FILE: file.c:818:
++		for (int j = (int)(inode->i_blocks) - 2; j > (int) iblock; j--) {
++			index->blocks[j + number_of_blocks_needed] = index->blocks[j];	
++		}
+
+ERROR: trailing whitespace
+#903: FILE: file.c:819:
++^I^I^Iindex->blocks[j + number_of_blocks_needed] = index->blocks[j];^I$
+
+ERROR: trailing whitespace
+#905: FILE: file.c:821:
++^I^I$
+
+ERROR: space required before the open brace '{'
+#906: FILE: file.c:822:
++		for (int i = iblock + number_of_blocks_needed; i > iblock; i--){
+
+WARNING: Missing a blank line after declarations
+#908: FILE: file.c:824:
++			int bno_bis = get_free_block(sbi);
++			if (!bno_bis) {
+
+WARNING: Missing a blank line after declarations
+#920: FILE: file.c:836:
++		struct buffer_head *tmpbh = sb_bread(sb, get_block_number(last_inserted_block));
++		if (!tmpbh) {
+
+ERROR: trailing whitespace
+#924: FILE: file.c:840:
++^I^I$
+
+ERROR: "foo* bar" should be "foo *bar"
+#925: FILE: file.c:841:
++		char* ptr_to_copy_from = bh->b_data + position_to_copy;
+
+WARNING: Missing a blank line after declarations
+#926: FILE: file.c:842:
++		char* ptr_to_copy_from = bh->b_data + position_to_copy;
++		memcpy(tmpbh->b_data, ptr_to_copy_from, cmpt);
+
+WARNING: Missing a blank line after declarations
+#932: FILE: file.c:848:
++		uint32_t block_size = get_block_size(last_inserted_block);
++		block_size = block_size + (uint32_t)cmpt;
+
+WARNING: Missing a blank line after declarations
+#941: FILE: file.c:857:
++		uint32_t block_size_fragment = get_block_size(bno);
++		block_size_fragment = block_size_fragment - (uint32_t)cmpt;
+
+ERROR: trailing whitespace
+#947: FILE: file.c:863:
++^I$
+
+WARNING: Missing a blank line after declarations
+#962: FILE: file.c:878:
++	uint32_t block_size_fragment = get_block_size(bno);
++	block_size_fragment = (block_size_fragment + (uint32_t)bytes_write);
+
+ERROR: space required before the open brace '{'
+#966: FILE: file.c:882:
++	if (*ppos > inode->i_size){
+
+WARNING: braces {} are not necessary for single statement blocks
+#966: FILE: file.c:882:
++	if (*ppos > inode->i_size){
++		inode->i_size = *ppos;
++	}
+
+WARNING: Missing a blank line after declarations
+#970: FILE: file.c:886:
++	uint32_t nr_blocks_old = inode->i_blocks;
++	if (inode->i_blocks == 1 || inode->i_blocks == 0){
+
+ERROR: space required before the open brace '{'
+#970: FILE: file.c:886:
++	if (inode->i_blocks == 1 || inode->i_blocks == 0){
+
+WARNING: braces {} are not necessary for any arm of this statement
+#970: FILE: file.c:886:
++	if (inode->i_blocks == 1 || inode->i_blocks == 0){
+[...]
++	} else {
+[...]
+
+ERROR: trailing whitespace
+#990: FILE: file.c:906:
++/* This function implements an ioctl to handle a command on the file system to check $
+
+WARNING: 'informations' may be misspelled - perhaps 'information'?
+#991: FILE: file.c:907:
++* informations regarding input file blocks. 
+   ^^^^^^^^^^^^
+
+ERROR: trailing whitespace
+#991: FILE: file.c:907:
++* informations regarding input file blocks. $
+
+WARNING: Block comments should align the * on each line
+#991: FILE: file.c:907:
++/* This function implements an ioctl to handle a command on the file system to check 
++* informations regarding input file blocks. 
+
+WARNING: line length of 125 exceeds 100 columns
+#993: FILE: file.c:909:
++* 1- Function Purpose: The `ouichefs_ioctl` function is responsible for handling IOCTL commands in the "ouichefs" filesystem.
+
+WARNING: line length of 133 exceeds 100 columns
+#994: FILE: file.c:910:
++* 2- Initialization: It initializes variables and allocates memory for an `ouichefs_ioctl_info` structure to store block information.
+
+WARNING: line length of 162 exceeds 100 columns
+#995: FILE: file.c:911:
++* 3- Command Validation: It checks if the received command is `OUICHEFS_IOC_GET_INFO`. If not, it returns `-ENOTTY`, indicating that the command is not supported.
+
+WARNING: line length of 153 exceeds 100 columns
+#996: FILE: file.c:912:
++* 4- Reading Index Block: It reads the index block of the file associated with the given inode to retrieve information about the blocks used by the file.
+
+WARNING: line length of 114 exceeds 100 columns
+#997: FILE: file.c:913:
++* 5- Iterating Over Blocks: It iterates through the entries in the index block to extract block numbers and sizes.
+
+WARNING: line length of 243 exceeds 100 columns
+#998: FILE: file.c:914:
++* 6- Collecting Block Information: For each non-zero block entry, it stores the block number and effective size in the `ouichefs_ioctl_info` structure. It also counts partially filled blocks and calculates internal fragmentation if applicable.
+
+WARNING: line length of 131 exceeds 100 columns
+#999: FILE: file.c:915:
++* 7- Copying to User Space: It copies the collected block information from the kernel space to the user space using `copy_to_user`.
+
+WARNING: line length of 213 exceeds 100 columns
+#1001: FILE: file.c:917:
++* 9- Return Value: If the copy to user space is successful, it returns `0` to indicate success. Otherwise, it returns `-EFAULT` if there's a memory copy error or `-EIO` if there's an error reading the index block.
+
+ERROR: open brace '{' following function definitions go on the next line
+#1003: FILE: file.c:919:
++static long ouichefs_ioctl(struct file *file, unsigned int cmd, unsigned long arg) {
+
+WARNING: please, no spaces at the start of a line
+#1004: FILE: file.c:920:
++    struct inode *inode = file_inode(file);$
+
+WARNING: please, no spaces at the start of a line
+#1005: FILE: file.c:921:
++    struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);$
+
+WARNING: please, no spaces at the start of a line
+#1006: FILE: file.c:922:
++    struct ouichefs_file_index_block *file_index;$
+
+WARNING: please, no spaces at the start of a line
+#1007: FILE: file.c:923:
++    struct buffer_head *bh_index;$
+
+WARNING: please, no spaces at the start of a line
+#1008: FILE: file.c:924:
++    struct super_block *sb = inode->i_sb;$
+
+WARNING: please, no spaces at the start of a line
+#1012: FILE: file.c:928:
++    if (!info) {$
+
+WARNING: braces {} are not necessary for single statement blocks
+#1012: FILE: file.c:928:
++    if (!info) {
++        return -ENOMEM;
++    }
+
+ERROR: code indent should use tabs where possible
+#1013: FILE: file.c:929:
++        return -ENOMEM;$
+
+WARNING: please, no spaces at the start of a line
+#1013: FILE: file.c:929:
++        return -ENOMEM;$
+
+WARNING: please, no spaces at the start of a line
+#1014: FILE: file.c:930:
++    }$
+
+WARNING: please, no spaces at the start of a line
+#1016: FILE: file.c:932:
++    memset(info, 0, sizeof(struct ouichefs_ioctl_info));$
+
+WARNING: please, no spaces at the start of a line
+#1018: FILE: file.c:934:
++    if (cmd != OUICHEFS_IOC_GET_INFO) {$
+
+WARNING: suspect code indent for conditional statements (4, 16)
+#1018: FILE: file.c:934:
++    if (cmd != OUICHEFS_IOC_GET_INFO) {
++		kfree(info);
+
+ERROR: code indent should use tabs where possible
+#1020: FILE: file.c:936:
++        return -ENOTTY;$
+
+WARNING: please, no spaces at the start of a line
+#1020: FILE: file.c:936:
++        return -ENOTTY;$
+
+WARNING: please, no spaces at the start of a line
+#1021: FILE: file.c:937:
++    }$
+
+WARNING: please, no spaces at the start of a line
+#1023: FILE: file.c:939:
++    bh_index = sb_bread(sb, ci->index_block);$
+
+WARNING: please, no spaces at the start of a line
+#1024: FILE: file.c:940:
++    if (!bh_index) {$
+
+WARNING: suspect code indent for conditional statements (4, 16)
+#1024: FILE: file.c:940:
++    if (!bh_index) {
++		kfree(info);
+
+ERROR: code indent should use tabs where possible
+#1026: FILE: file.c:942:
++        return -EIO;$
+
+WARNING: please, no spaces at the start of a line
+#1026: FILE: file.c:942:
++        return -EIO;$
+
+WARNING: please, no spaces at the start of a line
+#1027: FILE: file.c:943:
++    }$
+
+WARNING: please, no spaces at the start of a line
+#1028: FILE: file.c:944:
++    file_index = (struct ouichefs_file_index_block *)bh_index->b_data;$
+
+WARNING: please, no spaces at the start of a line
+#1030: FILE: file.c:946:
++    for (int i = 0; i < (OUICHEFS_BLOCK_SIZE >> 2); ++i) {$
+
+ERROR: code indent should use tabs where possible
+#1031: FILE: file.c:947:
++        uint32_t entry = file_index->blocks[i];$
+
+WARNING: please, no spaces at the start of a line
+#1031: FILE: file.c:947:
++        uint32_t entry = file_index->blocks[i];$
+
+ERROR: code indent should use tabs where possible
+#1032: FILE: file.c:948:
++        if (entry == 0) {$
+
+WARNING: Missing a blank line after declarations
+#1032: FILE: file.c:948:
++        uint32_t entry = file_index->blocks[i];
++        if (entry == 0) {
+
+WARNING: please, no spaces at the start of a line
+#1032: FILE: file.c:948:
++        if (entry == 0) {$
+
+WARNING: suspect code indent for conditional statements (8, 12)
+#1032: FILE: file.c:948:
++        if (entry == 0) {
++            continue;
+
+WARNING: braces {} are not necessary for single statement blocks
+#1032: FILE: file.c:948:
++        if (entry == 0) {
++            continue;
++        }
+
+ERROR: code indent should use tabs where possible
+#1033: FILE: file.c:949:
++            continue;$
+
+WARNING: please, no spaces at the start of a line
+#1033: FILE: file.c:949:
++            continue;$
+
+ERROR: code indent should use tabs where possible
+#1034: FILE: file.c:950:
++        }$
+
+WARNING: please, no spaces at the start of a line
+#1034: FILE: file.c:950:
++        }$
+
+ERROR: code indent should use tabs where possible
+#1036: FILE: file.c:952:
++        uint32_t block_number = get_block_number(entry);$
+
+WARNING: please, no spaces at the start of a line
+#1036: FILE: file.c:952:
++        uint32_t block_number = get_block_number(entry);$
+
+ERROR: code indent should use tabs where possible
+#1037: FILE: file.c:953:
++        uint32_t size = get_block_size(entry);$
+
+WARNING: please, no spaces at the start of a line
+#1037: FILE: file.c:953:
++        uint32_t size = get_block_size(entry);$
+
+ERROR: code indent should use tabs where possible
+#1039: FILE: file.c:955:
++        info->blocks[info->used_blocks].block_number = block_number;$
+
+WARNING: please, no spaces at the start of a line
+#1039: FILE: file.c:955:
++        info->blocks[info->used_blocks].block_number = block_number;$
+
+ERROR: code indent should use tabs where possible
+#1040: FILE: file.c:956:
++        info->blocks[info->used_blocks].effective_size = size;$
+
+WARNING: please, no spaces at the start of a line
+#1040: FILE: file.c:956:
++        info->blocks[info->used_blocks].effective_size = size;$
+
+ERROR: code indent should use tabs where possible
+#1041: FILE: file.c:957:
++        info->used_blocks++;$
+
+WARNING: please, no spaces at the start of a line
+#1041: FILE: file.c:957:
++        info->used_blocks++;$
+
+ERROR: code indent should use tabs where possible
+#1043: FILE: file.c:959:
++        if (size != 0 && size < OUICHEFS_BLOCK_SIZE) {$
+
+WARNING: please, no spaces at the start of a line
+#1043: FILE: file.c:959:
++        if (size != 0 && size < OUICHEFS_BLOCK_SIZE) {$
+
+WARNING: suspect code indent for conditional statements (8, 12)
+#1043: FILE: file.c:959:
++        if (size != 0 && size < OUICHEFS_BLOCK_SIZE) {
++            info->partially_filled_blocks++;
+
+ERROR: code indent should use tabs where possible
+#1044: FILE: file.c:960:
++            info->partially_filled_blocks++;$
+
+WARNING: please, no spaces at the start of a line
+#1044: FILE: file.c:960:
++            info->partially_filled_blocks++;$
+
+ERROR: code indent should use tabs where possible
+#1045: FILE: file.c:961:
++            info->internal_fragmentation += (OUICHEFS_BLOCK_SIZE - size);$
+
+WARNING: please, no spaces at the start of a line
+#1045: FILE: file.c:961:
++            info->internal_fragmentation += (OUICHEFS_BLOCK_SIZE - size);$
+
+ERROR: code indent should use tabs where possible
+#1046: FILE: file.c:962:
++        }$
+
+WARNING: please, no spaces at the start of a line
+#1046: FILE: file.c:962:
++        }$
+
+WARNING: please, no spaces at the start of a line
+#1047: FILE: file.c:963:
++    }$
+
+WARNING: please, no spaces at the start of a line
+#1048: FILE: file.c:964:
++    brelse(bh_index);$
+
+WARNING: please, no spaces at the start of a line
+#1050: FILE: file.c:966:
++    if (copy_to_user((struct ouichefs_ioctl_info *)arg, info, sizeof(struct ouichefs_ioctl_info))) {$
+
+WARNING: suspect code indent for conditional statements (4, 16)
+#1050: FILE: file.c:966:
++    if (copy_to_user((struct ouichefs_ioctl_info *)arg, info, sizeof(struct ouichefs_ioctl_info))) {
++		kfree(info);
+
+ERROR: code indent should use tabs where possible
+#1052: FILE: file.c:968:
++        return -EFAULT;$
+
+WARNING: please, no spaces at the start of a line
+#1052: FILE: file.c:968:
++        return -EFAULT;$
+
+WARNING: please, no spaces at the start of a line
+#1053: FILE: file.c:969:
++    }$
+
+WARNING: please, no spaces at the start of a line
+#1055: FILE: file.c:971:
++    return 0;$
+
+ERROR: trailing whitespace
+#1059: FILE: file.c:975:
++* data to the beginning of the block and zeroing out the remaining space: $
+
+WARNING: Block comments should align the * on each line
+#1059: FILE: file.c:975:
++/* Called by ouichefs_ioctl_defragmentation function and helps to move all non zero
++* data to the beginning of the block and zeroing out the remaining space: 
+
+ERROR: trailing whitespace
+#1063: FILE: file.c:979:
++* 3- Defragmentation: $
+
+ERROR: trailing whitespace
+#1079: FILE: file.c:995:
++^I$
+
+WARNING: braces {} are not necessary for single statement blocks
+#1080: FILE: file.c:996:
++	if (get_block_size(current_block) == 0) {
++		return 0;
++	}
+
+ERROR: trailing whitespace
+#1083: FILE: file.c:999:
++^I^I$
+
+WARNING: suspect code indent for conditional statements (8, 8)
+#1085: FILE: file.c:1001:
++	if (!bh) {
++        return -EIO;
+
+WARNING: braces {} are not necessary for single statement blocks
+#1085: FILE: file.c:1001:
++	if (!bh) {
++        return -EIO;
++    }
+
+ERROR: code indent should use tabs where possible
+#1086: FILE: file.c:1002:
++        return -EIO;$
+
+WARNING: please, no spaces at the start of a line
+#1086: FILE: file.c:1002:
++        return -EIO;$
+
+WARNING: please, no spaces at the start of a line
+#1087: FILE: file.c:1003:
++    }$
+
+ERROR: trailing whitespace
+#1088: FILE: file.c:1004:
++^I$
+
+ERROR: space required before the open parenthesis '('
+#1089: FILE: file.c:1005:
++	for(loff_t block_pos = 0; block_pos < OUICHEFS_BLOCK_SIZE; block_pos++) {
+
+ERROR: space required before the open parenthesis '('
+#1090: FILE: file.c:1006:
++		if(bh->b_data[block_pos] != 0) {
+
+ERROR: space required before the open parenthesis '('
+#1091: FILE: file.c:1007:
++			if(active) {
+
+WARNING: braces {} are not necessary for any arm of this statement
+#1091: FILE: file.c:1007:
++			if(active) {
+[...]
++			} else {
+[...]
+
+ERROR: space required after that close brace '}'
+#1096: FILE: file.c:1012:
++		}else {
+
+ERROR: space required before the open parenthesis '('
+#1097: FILE: file.c:1013:
++			if(active && copy_len != 0) {
+
+WARNING: line length of 105 exceeds 100 columns
+#1098: FILE: file.c:1014:
++				memcpy(bh->b_data + full  + 1, bh->b_data + empty + 1, copy_len - empty);
+
+WARNING: please, no spaces at the start of a line
+#1124: FILE: file.c:1040:
++    struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);$
+
+WARNING: please, no spaces at the start of a line
+#1126: FILE: file.c:1042:
++    struct ouichefs_file_index_block *file_index;$
+
+WARNING: please, no spaces at the start of a line
+#1127: FILE: file.c:1043:
++    struct buffer_head *bh_index;$
+
+WARNING: please, no spaces at the start of a line
+#1132: FILE: file.c:1048:
++    if (!bh_index) {$
+
+WARNING: braces {} are not necessary for single statement blocks
+#1132: FILE: file.c:1048:
++    if (!bh_index) {
++        return -EIO;
++    }
+
+ERROR: code indent should use tabs where possible
+#1133: FILE: file.c:1049:
++        return -EIO;$
+
+WARNING: please, no spaces at the start of a line
+#1133: FILE: file.c:1049:
++        return -EIO;$
+
+WARNING: please, no spaces at the start of a line
+#1134: FILE: file.c:1050:
++    }$
+
+WARNING: please, no spaces at the start of a line
+#1135: FILE: file.c:1051:
++    file_index = (struct ouichefs_file_index_block *)bh_index->b_data;$
+
+WARNING: Missing a blank line after declarations
+#1137: FILE: file.c:1053:
++	uint32_t current_block;
++	for (int i = 0; i < (OUICHEFS_BLOCK_SIZE >> 2); i++) {
+
+WARNING: braces {} are not necessary for single statement blocks
+#1139: FILE: file.c:1055:
++		if (current_block == 0) {
++			break;
++		}
+
+ERROR: trailing whitespace
+#1143: FILE: file.c:1059:
++^I^I$
+
+WARNING: Missing a blank line after declarations
+#1149: FILE: file.c:1065:
++	int copied_so_far = 0;
++	for (int i = 0; i < (OUICHEFS_BLOCK_SIZE >> 2); i++) {
+
+WARNING: Missing a blank line after declarations
+#1151: FILE: file.c:1067:
++		uint32_t current_block = file_index->blocks[i];
++		if(current_block == 0) {
+
+ERROR: space required before the open parenthesis '('
+#1151: FILE: file.c:1067:
++		if(current_block == 0) {
+
+WARNING: braces {} are not necessary for single statement blocks
+#1151: FILE: file.c:1067:
++		if(current_block == 0) {
++			break;
++		}
+
+ERROR: trailing whitespace
+#1156: FILE: file.c:1072:
++^I^I$
+
+ERROR: space required before the open parenthesis '('
+#1157: FILE: file.c:1073:
++		if(size == OUICHEFS_BLOCK_SIZE) {
+
+WARNING: braces {} are not necessary for single statement blocks
+#1157: FILE: file.c:1073:
++		if(size == OUICHEFS_BLOCK_SIZE) {
++			continue;
++		}
+
+ERROR: trailing whitespace
+#1166: FILE: file.c:1082:
++^I^I$
+
+ERROR: trailing whitespace
+#1168: FILE: file.c:1084:
++^I^Icopy_to = i; $
+
+WARNING: Missing a blank line after declarations
+#1170: FILE: file.c:1086:
++		int j = i + 1;
++		for(; j < (OUICHEFS_BLOCK_SIZE >> 2); j++) {
+
+ERROR: space required before the open parenthesis '('
+#1170: FILE: file.c:1086:
++		for(; j < (OUICHEFS_BLOCK_SIZE >> 2); j++) {
+
+WARNING: braces {} are not necessary for single statement blocks
+#1174: FILE: file.c:1090:
++			if (from_block == 0) {
++				break;
++			}
+
+WARNING: braces {} are not necessary for single statement blocks
+#1177: FILE: file.c:1093:
++			if (size == OUICHEFS_BLOCK_SIZE) {
++				break;
++			}
+
+ERROR: trailing whitespace
+#1183: FILE: file.c:1099:
++^I^I^I$
+
+ERROR: space required before the open parenthesis '('
+#1198: FILE: file.c:1114:
++			if(bytes_to_copy != size_from) {
+
+WARNING: braces {} are not necessary for single statement blocks
+#1198: FILE: file.c:1114:
++			if(bytes_to_copy != size_from) {
++				apply_contigue(from_block, sb);
++			}
+
+ERROR: space required before the open parenthesis '('
+#1212: FILE: file.c:1128:
++		if(copied_so_far >= inode->i_size) {
+
+ERROR: space required before the open parenthesis '('
+#1213: FILE: file.c:1129:
++			for(int z = j-1; z < inode->i_blocks-1; z++) {
+
+WARNING: Block comments use * on subsequent lines
+#1228: FILE: file.c:1144:
++/*
++This function helps to select the ioctl command to execute
+
+WARNING: please, no spaces at the start of a line
+#1232: FILE: file.c:1148:
++    switch (cmd) {$
+
+ERROR: switch and case should be at the same indent
+#1232: FILE: file.c:1148:
++    switch (cmd) {
++        case OUICHEFS_IOC_GET_INFO:
+[...]
++        case OUICHEFS_IOC_GET_DEFRAG:
+[...]
++		default:
+
+ERROR: code indent should use tabs where possible
+#1233: FILE: file.c:1149:
++        case OUICHEFS_IOC_GET_INFO:$
+
+WARNING: please, no spaces at the start of a line
+#1233: FILE: file.c:1149:
++        case OUICHEFS_IOC_GET_INFO:$
+
+ERROR: code indent should use tabs where possible
+#1234: FILE: file.c:1150:
++            ouichefs_ioctl(file, cmd, arg);$
+
+WARNING: please, no spaces at the start of a line
+#1234: FILE: file.c:1150:
++            ouichefs_ioctl(file, cmd, arg);$
+
+ERROR: code indent should use tabs where possible
+#1236: FILE: file.c:1152:
++        case OUICHEFS_IOC_GET_DEFRAG:$
+
+WARNING: please, no spaces at the start of a line
+#1236: FILE: file.c:1152:
++        case OUICHEFS_IOC_GET_DEFRAG:$
+
+ERROR: code indent should use tabs where possible
+#1237: FILE: file.c:1153:
++            ouichefs_ioctl_defragmentation(file, cmd, arg);$
+
+WARNING: please, no spaces at the start of a line
+#1237: FILE: file.c:1153:
++            ouichefs_ioctl_defragmentation(file, cmd, arg);$
+
+WARNING: please, no spaces at the start of a line
+#1241: FILE: file.c:1157:
++    }$
+
+ERROR: patch seems to be corrupt (line wrapped?)
+#1246: FILE: file.c:1160:
+\ Pas de fin de ligne à la fin du fichier
+
+ERROR: trailing whitespace
+#1250: FILE: file.c:1164:
++^I// .read = ouichefs_read,^I$
+
+ERROR: Missing Signed-off-by: line(s)
+
+total: 98 errors, 287 warnings, 1255 lines checked
+
+NOTE: For some of the reported defects, checkpatch may be able to
+      mechanically convert to the typical style using --fix or --fix-inplace.
+
+NOTE: Whitespace errors detected.
+      You may wish to use scripts/cleanpatch or scripts/cleanfile
+
+patchfile.patch has style problems, please review.
+
+NOTE: If any of the errors are false positives, please report
+      them to the maintainer, see CHECKPATCH in MAINTAINERS.

@@ -1,5 +1,6 @@
 
 
+
 // SPDX-License-Identifier: GPL-2.0
 /*
  * ouiche_fs - a simple educational filesystem for Linux
@@ -1001,15 +1002,15 @@ int apply_contigue(uint32_t current_block, struct super_block *sb)
         return -EIO;
     }
 	
-	for(loff_t block_pos = 0; block_pos < OUICHEFS_BLOCK_SIZE; block_pos++) {
+	for (loff_t block_pos = 0; block_pos < OUICHEFS_BLOCK_SIZE; block_pos++) {
 		if(bh->b_data[block_pos] != 0) {
-			if(active) {
+			if (active) {
 				copy_len = block_pos;
 			} else {
 				full = block_pos;
 			}
-		}else {
-			if(active && copy_len != 0) {
+		} else {
+			if (active && copy_len != 0) {
 				memcpy(bh->b_data + full  + 1, bh->b_data + empty + 1, copy_len - empty);
 				memset(bh->b_data + empty + 1, 0, copy_len - empty);
 				full += copy_len - (empty + 1);
@@ -1044,10 +1045,11 @@ static long ouichefs_ioctl_defragmentation(struct file *file, unsigned int cmd, 
 	struct buffer_head *bh_bis;
 
 	bh_index = sb_bread(sb, ci->index_block);
-    if (!bh_index) {
-        return -EIO;
-    }
-    file_index = (struct ouichefs_file_index_block *)bh_index->b_data;
+	if (!bh_index) {
+		return -EIO;
+	}
+    
+	file_index = (struct ouichefs_file_index_block *)bh_index->b_data;
 	uint32_t current_block;
 	for (int i = 0; i < (OUICHEFS_BLOCK_SIZE >> 2); i++) {
 		current_block = file_index->blocks[i];
@@ -1055,21 +1057,21 @@ static long ouichefs_ioctl_defragmentation(struct file *file, unsigned int cmd, 
 			break;
 		}
 		int n = apply_contigue(current_block, sb);
-		
 	}
-
+	
 	int copy_to = 0;
 	int copy_from = 0;
 	int copied_so_far = 0;
+
 	for (int i = 0; i < (OUICHEFS_BLOCK_SIZE >> 2); i++) {
 		uint32_t current_block = file_index->blocks[i];
-		if(current_block == 0) {
+		if (current_block == 0) {
 			break;
 		}
 		uint32_t size = get_block_size(current_block);
 		uint32_t size_left;
 		
-		if(size == OUICHEFS_BLOCK_SIZE) {
+		if (size == OUICHEFS_BLOCK_SIZE) {
 			continue;
 		}
 
@@ -1078,11 +1080,11 @@ static long ouichefs_ioctl_defragmentation(struct file *file, unsigned int cmd, 
 			brelse(bh_index);
 			return -EIO;
 		}
-		
+
 		size_left = OUICHEFS_BLOCK_SIZE - size;
-		copy_to = i; 
+		copy_to = i;
 		int j = i + 1;
-		for(; j < (OUICHEFS_BLOCK_SIZE >> 2); j++) {
+		for (; j < (OUICHEFS_BLOCK_SIZE >> 2); j++) {
 			copy_from = j;
 			uint32_t from_block = file_index->blocks[j];
 
@@ -1095,7 +1097,6 @@ static long ouichefs_ioctl_defragmentation(struct file *file, unsigned int cmd, 
 
 			uint32_t size_from = get_block_size(from_block);
 			size_t bytes_to_copy = min(size_left, size_from);
-			
 			bh_bis = sb_bread(sb, get_block_number(from_block));
 			if (!bh_bis) {
 				brelse(bh_bis);
@@ -1110,7 +1111,7 @@ static long ouichefs_ioctl_defragmentation(struct file *file, unsigned int cmd, 
 			size_from = size_from - bytes_to_copy;
 			from_block = create_block_entry(get_block_number(from_block), size_from);
 			file_index->blocks[j] = from_block;
-			if(bytes_to_copy != size_from) {
+			if (bytes_to_copy != size_from) {
 				apply_contigue(from_block, sb);
 			}
 
@@ -1124,11 +1125,12 @@ static long ouichefs_ioctl_defragmentation(struct file *file, unsigned int cmd, 
 		brelse(bh);
 
 		copied_so_far += size;
-		if(copied_so_far >= inode->i_size) {
-			for(int z = j-1; z < inode->i_blocks-1; z++) {
+		if (copied_so_far >= inode->i_size) {
+			for (int z = j-1; z < inode->i_blocks-1; z++) {
 				put_block(OUICHEFS_SB(sb), file_index->blocks[z]);
 				file_index->blocks[z] = 0;
 			}
+
 			inode->i_blocks = j;
 			mark_inode_dirty(inode);
 		}
@@ -1144,16 +1146,16 @@ This function helps to select the ioctl command to execute
 */
 static long my_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
-    switch (cmd) {
-        case OUICHEFS_IOC_GET_INFO:
-            ouichefs_ioctl(file, cmd, arg);
-			break;
-        case OUICHEFS_IOC_GET_DEFRAG:
-            ouichefs_ioctl_defragmentation(file, cmd, arg);
-			break;
-		default:
-			break;
-    }
+	switch (cmd) {
+	case OUICHEFS_IOC_GET_INFO:
+		ouichefs_ioctl(file, cmd, arg);
+		break;
+	case OUICHEFS_IOC_GET_DEFRAG:
+		ouichefs_ioctl_defragmentation(file, cmd, arg);
+		break;
+	default:
+		break;
+	}
 	return 0;
 }
 
