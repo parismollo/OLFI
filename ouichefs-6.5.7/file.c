@@ -320,96 +320,96 @@ uint32_t get_block_size(uint32_t entry) {
 */
 
 
-// static int nb_block_read = 0; // Global counter to track the number of blocks read
-// static ssize_t ouichefs_read_fragment(struct file *filep, char __user *buf, size_t len, loff_t *ppos)
-// {	
+static int nb_block_read = 0; // Global counter to track the number of blocks read
+static ssize_t ouichefs_read_fragment(struct file *filep, char __user *buf, size_t len, loff_t *ppos)
+{	
 
-// 	// Get the necessary structures from the file descriptor
-// 	struct inode *inode = filep->f_inode;
-// 	struct super_block *sb = filep->f_inode->i_sb;
-// 	struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
-// 	struct ouichefs_file_index_block *index;
-// 	struct buffer_head *bh_index;
-// 	size_t bytes_to_read;
-// 	size_t bytes_not_read;
-// 	size_t bytes_read = 0;
-// 	sector_t iblock;
-// 	size_t offset;
+	// Get the necessary structures from the file descriptor
+	struct inode *inode = filep->f_inode;
+	struct super_block *sb = filep->f_inode->i_sb;
+	struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
+	struct ouichefs_file_index_block *index;
+	struct buffer_head *bh_index;
+	size_t bytes_to_read;
+	size_t bytes_not_read;
+	size_t bytes_read = 0;
+	sector_t iblock;
+	size_t offset;
 
-// 	// Checks if the number of blocks read exceeds the total number of blocks in the file
-// 	if ( nb_block_read >= inode->i_blocks - 1) {
-// 		nb_block_read = 0;
-// 		return bytes_read;
-// 	}
+	// Checks if the number of blocks read exceeds the total number of blocks in the file
+	if ( nb_block_read >= inode->i_blocks - 1) {
+		nb_block_read = 0;
+		return bytes_read;
+	}
 
-// 	// Reads the index block to get information from data blocks
-// 	bh_index = sb_bread(sb, ci->index_block);
-// 	if (!bh_index)
-// 		return -EIO;
-// 	index = (struct ouichefs_file_index_block *)bh_index->b_data;
+	// Reads the index block to get information from data blocks
+	bh_index = sb_bread(sb, ci->index_block);
+	if (!bh_index)
+		return -EIO;
+	index = (struct ouichefs_file_index_block *)bh_index->b_data;
 
-// 	// Calculates block index based on current position
-// 	iblock = *ppos / OUICHEFS_BLOCK_SIZE;
-// 	if (index->blocks[iblock] == 0) {
-// 		brelse(bh_index);
-// 		return bytes_read;
-// 	}
+	// Calculates block index based on current position
+	iblock = *ppos / OUICHEFS_BLOCK_SIZE;
+	if (index->blocks[iblock] == 0) {
+		brelse(bh_index);
+		return bytes_read;
+	}
 
-// 	// Retrieves the block number and reads the corresponding data block
-// 	int bno = index->blocks[iblock];
-// 	struct buffer_head *bh = sb_bread(sb, get_block_number(bno));
-// 	if (!bh) {
-// 		brelse(bh_index);
-// 		return -EIO;
-// 	}
+	// Retrieves the block number and reads the corresponding data block
+	int bno = index->blocks[iblock];
+	struct buffer_head *bh = sb_bread(sb, get_block_number(bno));
+	if (!bh) {
+		brelse(bh_index);
+		return -EIO;
+	}
 	
-// 	// Calculates offset from current position
-// 	offset = *ppos % OUICHEFS_BLOCK_SIZE;
-// 	uint32_t size = get_block_size(bno);
-// 	int start = -1;
-// 	int end = 0;
-// 	// Determines the range of non-zero data to read from the block
-// 	if (size != 0) { 
-// 		for (int i = offset; i < OUICHEFS_BLOCK_SIZE; i++) {
-// 			if (bh->b_data[i] != 0){ 
-// 				if (start == -1){
-// 					start = i; // Start of non-zero data
-// 				}
-// 				end++;
-// 			}else{
-// 				if (start != -1){
-// 					break; // End of non-zero data
-// 				}
-// 			}
-// 		}
-// 		bytes_to_read = end; // Number of bytes to read
-// 	} else {
-// 		start = offset;
-// 		bytes_to_read = (size_t) OUICHEFS_BLOCK_SIZE; // Read the whole block if size is 0
-// 	}
+	// Calculates offset from current position
+	offset = *ppos % OUICHEFS_BLOCK_SIZE;
+	uint32_t size = get_block_size(bno);
+	int start = -1;
+	int end = 0;
+	// Determines the range of non-zero data to read from the block
+	if (size != 0) { 
+		for (int i = offset; i < OUICHEFS_BLOCK_SIZE; i++) {
+			if (bh->b_data[i] != 0){ 
+				if (start == -1){
+					start = i; // Start of non-zero data
+				}
+				end++;
+			}else{
+				if (start != -1){
+					break; // End of non-zero data
+				}
+			}
+		}
+		bytes_to_read = end; // Number of bytes to read
+	} else {
+		start = offset;
+		bytes_to_read = (size_t) OUICHEFS_BLOCK_SIZE; // Read the whole block if size is 0
+	}
 
-// 	bytes_not_read = copy_to_user(buf, bh->b_data + start, bytes_to_read);
-// 	if (bytes_not_read) {
-// 		brelse(bh);
-// 		brelse(bh_index);
-// 		return -EFAULT;
-// 	}
+	bytes_not_read = copy_to_user(buf, bh->b_data + start, bytes_to_read);
+	if (bytes_not_read) {
+		brelse(bh);
+		brelse(bh_index);
+		return -EFAULT;
+	}
 
-// 	bytes_read = bytes_to_read - bytes_not_read;
-// 	*ppos += bytes_read;
+	bytes_read = bytes_to_read - bytes_not_read;
+	*ppos += bytes_read;
 
-// 	/* We read the entire block*/
-// 	if (bytes_read >= size ) {
-// 		 nb_block_read++;
-// 		*ppos += OUICHEFS_BLOCK_SIZE - bytes_read;
-// 	}
+	/* We read the entire block*/
+	if (bytes_read >= size ) {
+		 nb_block_read++;
+		*ppos += OUICHEFS_BLOCK_SIZE - bytes_read;
+	}
 	
-// 	brelse(bh);
-// 	brelse(bh_index);
+	brelse(bh);
+	brelse(bh_index);
 
-//  
-// 	return bytes_read;
-// }
+ 
+	return bytes_read;
+}
 
 
 /**
@@ -582,177 +582,177 @@ uint32_t get_block_size(uint32_t entry) {
 * 9- Return: Finally, it returns the number of bytes successfully written to the file, or an error code if any issues occurred during the process.
 */
 
-// static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *buf, size_t len, loff_t *ppos)
-// {	
+static ssize_t ouichefs_write_fragment(struct file *filep, const char __user *buf, size_t len, loff_t *ppos)
+{	
 
-// 	struct inode *inode = filep->f_inode;
-// 	struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
-// 	struct super_block *sb = inode->i_sb;
-// 	struct ouichefs_sb_info *sbi = OUICHEFS_SB(sb);
-// 	struct buffer_head *bh_index;
-// 	struct ouichefs_file_index_block *index;
-// 	size_t bytes_to_write; 
-// 	size_t bytes_write = 0;
-// 	size_t bytes_not_write;
-// 	sector_t iblock;
-// 	size_t offset;
-// 	size_t remaining;
-// 	int bno;
+	struct inode *inode = filep->f_inode;
+	struct ouichefs_inode_info *ci = OUICHEFS_INODE(inode);
+	struct super_block *sb = inode->i_sb;
+	struct ouichefs_sb_info *sbi = OUICHEFS_SB(sb);
+	struct buffer_head *bh_index;
+	struct ouichefs_file_index_block *index;
+	size_t bytes_to_write; 
+	size_t bytes_write = 0;
+	size_t bytes_not_write;
+	sector_t iblock;
+	size_t offset;
+	size_t remaining;
+	int bno;
 	
-// 	if (*ppos + len > OUICHEFS_MAX_FILESIZE)
-// 		return -ENOSPC;
+	if (*ppos + len > OUICHEFS_MAX_FILESIZE)
+		return -ENOSPC;
 
-// 	uint32_t nr_allocs = max(*ppos + (unsigned int) len, inode->i_size) / OUICHEFS_BLOCK_SIZE;
-// 	if (nr_allocs > inode->i_blocks - 1)
-// 		nr_allocs -= inode->i_blocks - 1;
-// 	else
-// 		nr_allocs = 0;
-// 	if (nr_allocs > sbi->nr_free_blocks)
-// 		return -ENOSPC;
+	uint32_t nr_allocs = max(*ppos + (unsigned int) len, inode->i_size) / OUICHEFS_BLOCK_SIZE;
+	if (nr_allocs > inode->i_blocks - 1)
+		nr_allocs -= inode->i_blocks - 1;
+	else
+		nr_allocs = 0;
+	if (nr_allocs > sbi->nr_free_blocks)
+		return -ENOSPC;
 
-// 	bool app = (filep->f_flags & O_APPEND) != 0;
-// 	if (app) {
-// 		*ppos = inode->i_size;
-// 	}
+	bool app = (filep->f_flags & O_APPEND) != 0;
+	if (app) {
+		*ppos = inode->i_size;
+	}
 
-// 	bh_index = sb_bread(sb, ci->index_block);
-// 	if (!bh_index)
-// 		return -EIO;
-// 	index = (struct ouichefs_file_index_block *)bh_index->b_data;
-// 	iblock = *ppos / OUICHEFS_BLOCK_SIZE;
-// 	if (index->blocks[iblock] == 0) {
-// 		bno = get_free_block(sbi);
-// 		if (!bno) {
-// 			brelse(bh_index);
-// 			return -ENOSPC;
-// 		}		
-// 		bno = create_block_entry((uint32_t)bno, (uint32_t)0);
-// 		clean_block(sb, bno);
-// 		index->blocks[iblock] = bno;
-// 	} else {
-// 		bno = index->blocks[iblock];
-// 	}
-// 	struct buffer_head *bh = sb_bread(sb, get_block_number(bno));
-// 	if (!bh) {
-// 		brelse(bh_index);
-// 		return -EIO;
-// 	}
-// 	offset = *ppos % OUICHEFS_BLOCK_SIZE;
-// 	remaining = OUICHEFS_BLOCK_SIZE - offset;
-// 	bytes_to_write = min(len, remaining);
+	bh_index = sb_bread(sb, ci->index_block);
+	if (!bh_index)
+		return -EIO;
+	index = (struct ouichefs_file_index_block *)bh_index->b_data;
+	iblock = *ppos / OUICHEFS_BLOCK_SIZE;
+	if (index->blocks[iblock] == 0) {
+		bno = get_free_block(sbi);
+		if (!bno) {
+			brelse(bh_index);
+			return -ENOSPC;
+		}		
+		bno = create_block_entry((uint32_t)bno, (uint32_t)0);
+		clean_block(sb, bno);
+		index->blocks[iblock] = bno;
+	} else {
+		bno = index->blocks[iblock];
+	}
+	struct buffer_head *bh = sb_bread(sb, get_block_number(bno));
+	if (!bh) {
+		brelse(bh_index);
+		return -EIO;
+	}
+	offset = *ppos % OUICHEFS_BLOCK_SIZE;
+	remaining = OUICHEFS_BLOCK_SIZE - offset;
+	bytes_to_write = min(len, remaining);
 
-// 	size_t number_of_blocks_needed = ((len + offset) / OUICHEFS_BLOCK_SIZE);
-// 	if (number_of_blocks_needed + inode->i_blocks > (OUICHEFS_BLOCK_SIZE >> 2) - 1) {
-// 		brelse(bh);
-// 		brelse(bh_index);
-// 		return -ENOSPC;
-// 	}
+	size_t number_of_blocks_needed = ((len + offset) / OUICHEFS_BLOCK_SIZE);
+	if (number_of_blocks_needed + inode->i_blocks > (OUICHEFS_BLOCK_SIZE >> 2) - 1) {
+		brelse(bh);
+		brelse(bh_index);
+		return -ENOSPC;
+	}
 
-// 	int cmpt = 0;
-// 	int position_to_copy = -1;
-// 	for (size_t i = offset ; i < OUICHEFS_BLOCK_SIZE; i++) {
-// 		if (bh->b_data[i] != 0){
-// 			if (position_to_copy == -1){
-// 				position_to_copy = i;
-// 				number_of_blocks_needed++;
-// 			}
-// 			cmpt++;
-// 		}else{
-// 			if (position_to_copy != -1){
-// 				break;
-// 			}
-// 		}
-// 	}
-// 	if (position_to_copy != -1){
-// 		for (int j = (int)(inode->i_blocks) - 2; j > (int) iblock; j--) {
-// 			index->blocks[j + number_of_blocks_needed] = index->blocks[j];	
-// 		}
+	int cmpt = 0;
+	int position_to_copy = -1;
+	for (size_t i = offset ; i < OUICHEFS_BLOCK_SIZE; i++) {
+		if (bh->b_data[i] != 0){
+			if (position_to_copy == -1){
+				position_to_copy = i;
+				number_of_blocks_needed++;
+			}
+			cmpt++;
+		}else{
+			if (position_to_copy != -1){
+				break;
+			}
+		}
+	}
+	if (position_to_copy != -1){
+		for (int j = (int)(inode->i_blocks) - 2; j > (int) iblock; j--) {
+			index->blocks[j + number_of_blocks_needed] = index->blocks[j];	
+		}
 		
-// 		for (int i = iblock + number_of_blocks_needed; i > iblock; i--){
-// 			int bno_bis = get_free_block(sbi);
-// 			if (!bno_bis) {
-// 				brelse(bh);
-// 				brelse(bh_index);
-// 				return -ENOSPC;
-// 			}
-// 			bno_bis = create_block_entry((uint32_t)bno_bis, (uint32_t)0);
-// 			clean_block(sb, bno_bis);
-// 			index->blocks[i] = bno_bis;
-// 		}
+		for (int i = iblock + number_of_blocks_needed; i > iblock; i--){
+			int bno_bis = get_free_block(sbi);
+			if (!bno_bis) {
+				brelse(bh);
+				brelse(bh_index);
+				return -ENOSPC;
+			}
+			bno_bis = create_block_entry((uint32_t)bno_bis, (uint32_t)0);
+			clean_block(sb, bno_bis);
+			index->blocks[i] = bno_bis;
+		}
 
-// 		int last_inserted_block = index->blocks[iblock + number_of_blocks_needed];
-// 		struct buffer_head *tmpbh = sb_bread(sb, get_block_number(last_inserted_block));
-// 		if (!tmpbh) {
-// 			brelse(bh_index);
-// 			return -EIO;
-// 		}
+		int last_inserted_block = index->blocks[iblock + number_of_blocks_needed];
+		struct buffer_head *tmpbh = sb_bread(sb, get_block_number(last_inserted_block));
+		if (!tmpbh) {
+			brelse(bh_index);
+			return -EIO;
+		}
 		
-// 		char* ptr_to_copy_from = bh->b_data + position_to_copy;
-// 		memcpy(tmpbh->b_data, ptr_to_copy_from, cmpt);
-// 		mark_buffer_dirty(tmpbh);
-// 		sync_dirty_buffer(tmpbh);
-// 		brelse(tmpbh);
-// 		uint32_t block_number = get_block_number(last_inserted_block);
-// 		uint32_t block_size = get_block_size(last_inserted_block);
-// 		block_size = block_size + (uint32_t)cmpt;
-// 		last_inserted_block = create_block_entry(block_number, block_size);
-// 		index->blocks[iblock + number_of_blocks_needed] = last_inserted_block;
+		char* ptr_to_copy_from = bh->b_data + position_to_copy;
+		memcpy(tmpbh->b_data, ptr_to_copy_from, cmpt);
+		mark_buffer_dirty(tmpbh);
+		sync_dirty_buffer(tmpbh);
+		brelse(tmpbh);
+		uint32_t block_number = get_block_number(last_inserted_block);
+		uint32_t block_size = get_block_size(last_inserted_block);
+		block_size = block_size + (uint32_t)cmpt;
+		last_inserted_block = create_block_entry(block_number, block_size);
+		index->blocks[iblock + number_of_blocks_needed] = last_inserted_block;
 
 
-// 		memset(ptr_to_copy_from, 0, cmpt);
+		memset(ptr_to_copy_from, 0, cmpt);
 
-// 		uint32_t block_number_fragment = get_block_number(bno);
-// 		uint32_t block_size_fragment = get_block_size(bno);
-// 		block_size_fragment = block_size_fragment - (uint32_t)cmpt;
+		uint32_t block_number_fragment = get_block_number(bno);
+		uint32_t block_size_fragment = get_block_size(bno);
+		block_size_fragment = block_size_fragment - (uint32_t)cmpt;
 
-// 		bno = create_block_entry(block_number_fragment, block_size_fragment);
-// 		index->blocks[iblock] = bno;
+		bno = create_block_entry(block_number_fragment, block_size_fragment);
+		index->blocks[iblock] = bno;
 
-// 	}
+	}
 	
-// 	bytes_not_write = copy_from_user(bh->b_data + offset, buf, bytes_to_write);
-// 	if (bytes_not_write) {
-// 		brelse(bh);
-// 		brelse(bh_index);
-// 		return -EFAULT;
-// 	}
-// 	mark_buffer_dirty(bh);
-// 	sync_dirty_buffer(bh);
-// 	brelse(bh);
-// 	bytes_write = bytes_to_write - bytes_not_write;
-// 	*ppos += bytes_write;
+	bytes_not_write = copy_from_user(bh->b_data + offset, buf, bytes_to_write);
+	if (bytes_not_write) {
+		brelse(bh);
+		brelse(bh_index);
+		return -EFAULT;
+	}
+	mark_buffer_dirty(bh);
+	sync_dirty_buffer(bh);
+	brelse(bh);
+	bytes_write = bytes_to_write - bytes_not_write;
+	*ppos += bytes_write;
 
-// 	uint32_t block_number_fragment = get_block_number(bno);
-// 	uint32_t block_size_fragment = get_block_size(bno);
-// 	block_size_fragment = (block_size_fragment + (uint32_t)bytes_write);
-// 	bno = create_block_entry(block_number_fragment, block_size_fragment);
-// 	index->blocks[iblock] = bno;
+	uint32_t block_number_fragment = get_block_number(bno);
+	uint32_t block_size_fragment = get_block_size(bno);
+	block_size_fragment = (block_size_fragment + (uint32_t)bytes_write);
+	bno = create_block_entry(block_number_fragment, block_size_fragment);
+	index->blocks[iblock] = bno;
 
-// 	if (*ppos > inode->i_size) {
-// 		inode->i_size = *ppos;
-// 	}
+	if (*ppos > inode->i_size) {
+		inode->i_size = *ppos;
+	}
 	
-// 	uint32_t nr_blocks_old = inode->i_blocks;
-// 	if (inode->i_blocks == 1 || inode->i_blocks == 0){
-// 		inode->i_blocks = inode->i_size / OUICHEFS_BLOCK_SIZE + 2;
-// 	} else {
-// 		inode->i_blocks += number_of_blocks_needed;
-// 	}
-// 	inode->i_mtime = inode->i_ctime = current_time(inode);
-// 	mark_inode_dirty(inode);
+	uint32_t nr_blocks_old = inode->i_blocks;
+	if (inode->i_blocks == 1 || inode->i_blocks == 0){
+		inode->i_blocks = inode->i_size / OUICHEFS_BLOCK_SIZE + 2;
+	} else {
+		inode->i_blocks += number_of_blocks_needed;
+	}
+	inode->i_mtime = inode->i_ctime = current_time(inode);
+	mark_inode_dirty(inode);
 
-// 	if (nr_blocks_old > inode->i_blocks) {
-// 		for (int i = inode->i_blocks - 1; i < nr_blocks_old - 1; i++) {
-// 			put_block(OUICHEFS_SB(sb), index->blocks[i]);
-// 			index->blocks[i] = 0;
-// 		}
-// 	}
+	if (nr_blocks_old > inode->i_blocks) {
+		for (int i = inode->i_blocks - 1; i < nr_blocks_old - 1; i++) {
+			put_block(OUICHEFS_SB(sb), index->blocks[i]);
+			index->blocks[i] = 0;
+		}
+	}
 	
-// 	mark_buffer_dirty(bh_index);
-// 	sync_dirty_buffer(bh_index);
-// 	brelse(bh_index);
-// 	return bytes_write;
-// }
+	mark_buffer_dirty(bh_index);
+	sync_dirty_buffer(bh_index);
+	brelse(bh_index);
+	return bytes_write;
+}
 
 /* This function implements an ioctl to handle a command on the file system to check
  * informations regarding input file blocks.
@@ -1016,6 +1016,7 @@ static long ouichefs_ioctl_defragmentation(struct file *file, unsigned int cmd, 
 				file_index->blocks[z] = 0;
 			}
 
+			/* Update the inode's block count */
 			inode->i_blocks = j;
 			mark_inode_dirty(inode);
 		}
@@ -1052,8 +1053,8 @@ const struct file_operations ouichefs_file_ops = {
 	// .write = ouichefs_write,
 	.llseek = generic_file_llseek,
 	.read_iter = generic_file_read_iter,
-	//.read = ouichefs_read_fragment,
-	//.write = ouichefs_write_fragment,
+	.read = ouichefs_read_fragment,
+	.write = ouichefs_write_fragment,
 	.write_iter = generic_file_write_iter,
 	.unlocked_ioctl = my_ioctl
 };
