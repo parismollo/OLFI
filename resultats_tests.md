@@ -1,5 +1,5 @@
 # Benchmark 
-## Read and Write 1.3
+## Read and Write 1.3 (our default version)
 ```
 root@pnl v4]# ./test
 ------------START BENCHMARK V4------------
@@ -60,7 +60,7 @@ verify_write_and_read(): OK!
 ------------END BENCHMARK V4------------
 ```
 
-## Default Linux
+## Default Linux read and write
 ```
 ------------START BENCHMARK V4------------
 (1) create_file_with_random_writes():
@@ -120,4 +120,78 @@ verify_write_and_read(): OK!
 ------------END BENCHMARK V4------------
 ```
 
-## Fragmented
+## Fragmented read and write
+------------START BENCHMARK V4------------
+(1) create_file_with_random_writes():
+create_file_with_random_writes() - Elapsed time: 0.015264 seconds
+(2) create_file_with_sequential_writes():
+create_file_with_sequential_writes() - Elapsed time: 0.000595 seconds
+(3) read_file_and_measure_performance():
+random - Elapsed time: 0.001000 seconds
+(4) read_file_and_measure_performance():
+sequential - Elapsed time: 0.000175 seconds
+(5) test_fragmented_write():
+test_fragmented_write() - Elapsed time: 0.001141 seconds
+(9) create_multiple_files_with_sequential_writes():
+create_file_with_sequential_writes() - Elapsed time: 0.000561 seconds
+create_file_with_sequential_writes() - Elapsed time: 0.000492 seconds
+create_file_with_sequential_writes() - Elapsed time: 0.000547 seconds
+create_file_with_sequential_writes() - Elapsed time: 0.000465 seconds
+create_file_with_sequential_writes() - Elapsed time: 0.000763 seconds
+Average elapsed time for 5 files: 0.001671 seconds
+(10) create_multiple_files_with_random_writes():
+create_file_with_random_writes() - Elapsed time: 0.030929 seconds
+create_file_with_random_writes() - Elapsed time: 0.014212 seconds
+create_file_with_random_writes() - Elapsed time: 0.012756 seconds
+create_file_with_random_writes() - Elapsed time: 0.012425 seconds
+create_file_with_random_writes() - Elapsed time: 0.012279 seconds
+Average elapsed time for 5 files: 0.017625 seconds
+(11) create_multiple_files_with_fragmented_writes():
+test_fragmented_write() - Elapsed time: 0.000768 seconds
+test_fragmented_write() - Elapsed time: 0.000887 seconds
+test_fragmented_write() - Elapsed time: 0.001268 seconds
+test_fragmented_write() - Elapsed time: 0.001000 seconds
+test_fragmented_write() - Elapsed time: 0.001235 seconds
+Average elapsed time for 5 files: 0.002760 seconds
+(12) read_multiple_files_and_measure_performance():
+File read - Elapsed time: 0.000081 seconds
+File read - Elapsed time: 0.000180 seconds
+File read - Elapsed time: 0.000096 seconds
+File read - Elapsed time: 0.000118 seconds
+File read - Elapsed time: 0.000123 seconds
+Average elapsed time for 5 files: 0.000648 seconds
+(13) read_multiple_files_and_measure_performance():
+File read - Elapsed time: 0.000140 seconds
+File read - Elapsed time: 0.000440 seconds
+File read - Elapsed time: 0.000722 seconds
+File read - Elapsed time: 0.000376 seconds
+File read - Elapsed time: 0.000439 seconds
+Average elapsed time for 5 files: 0.000901 seconds
+(14) read_multiple_files_and_measure_performance():
+File read - Elapsed time: 0.000090 seconds
+File read - Elapsed time: 0.000220 seconds
+File read - Elapsed time: 0.000142 seconds
+File read - Elapsed time: 0.000204 seconds
+File read - Elapsed time: 0.000142 seconds
+Average elapsed time for 5 files: 0.000492 seconds
+(15) verify_write_and_read():
+verify_write_and_read(): OK!
+------------END BENCHMARK V4------------
+
+
+
+
+| Opération                                        | Read and Write 1.3 (s) | Default Linux (s) | Fragmented Read and Write (s) |
+|--------------------------------------------------|------------------------|-------------------|-------------------------------|
+| Écriture aléatoire                               | 0.009684               | 0.002687          | 0.015264                      |
+| Écriture séquentielle                            | 0.000693               | 0.000233          | 0.000595                      |
+| Lecture aléatoire                                | 0.000736               | 0.000813          | 0.001000                      |
+| Lecture séquentielle                             | 0.000109               | 0.000083          | 0.000175                      |
+| Écriture fragmentée                              | 0.001113               | 0.000725          | 0.001141                      |
+| Création multiples fichiers (écriture séquentielle) | 0.001579               | 0.000869          | 0.001671                      |
+| Création multiples fichiers (écriture aléatoire) | 0.009298               | 0.001948          | 0.017625                      |
+| Création multiples fichiers (écriture fragmentée)| 0.001931               | 0.001270          | 0.002760                      |
+| Lecture multiples fichiers                       | 0.000702               | 0.000533          | 0.000648                      |
+| Lecture multiples fichiers                       | 0.000436               | 0.000457          | 0.000901                      |
+| Lecture multiples fichiers                       | 0.000455               | 0.000344          | 0.000492                      |
+| Vérification écriture/lecture                    | OK                     | OK                | OK                           |

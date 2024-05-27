@@ -421,21 +421,21 @@ static ssize_t ouichefs_read_fragment(struct file *filep, char __user *buf, size
  * the buffer.
  * Returns 0 on success, a negative error on failure.
  */
-// static int clean_block(struct super_block *sb, uint32_t block_entry) 
-// {
-// 	struct buffer_head *bh = sb_bread(sb, get_block_number(block_entry));
-// 	if (!bh) {
-// 		brelse(bh);
-// 		return -EIO;
-// 	}
+static int clean_block(struct super_block *sb, uint32_t block_entry) 
+{
+	struct buffer_head *bh = sb_bread(sb, get_block_number(block_entry));
+	if (!bh) {
+		brelse(bh);
+		return -EIO;
+	}
 
-// 	// Fills the block with zeros, assuming the block size is 4096 bytes
-// 	memset(bh->b_data, 0, 4096);
-// 	mark_buffer_dirty(bh);
-// 	sync_dirty_buffer(bh);
-// 	brelse(bh);
-// 	return 0;
-// }
+	// Fills the block with zeros, assuming the block size is 4096 bytes
+	memset(bh->b_data, 0, 4096);
+	mark_buffer_dirty(bh);
+	sync_dirty_buffer(bh);
+	brelse(bh);
+	return 0;
+}
 
 /*
 *This function does the basic write operation without optization.
